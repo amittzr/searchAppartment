@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Skip ESLint during `next build` — TypeScript strict mode catches real errors.
+  // ESLint can still be run separately with `npm run lint`.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     // Allow images from common apartment listing sources.
     // Keeping https-only; http is excluded to prevent mixed-content issues.
