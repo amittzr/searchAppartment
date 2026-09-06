@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { AlertCircle, SearchX, Home } from "lucide-react";
 
 import Navbar from "@/components/Navbar";
@@ -17,7 +18,49 @@ import type {
   FilterStatus,
 } from "@/types/database";
 
+// Helper to parse bookmarklet URL params into form data
+function parseBookmarkletParams(searchParams: URLSearchParams): Partial<ApartmentFormData> | null {
+  if (searchParams.get('autofill') !== 'true') return null;
+
+  const data: Partial<ApartmentFormData> = {};
+  
+  const url = searchParams.get('url');
+  const title = searchParams.get('title');
+  const price = searchParams.get('price');
+  const phone = searchParams.get('phone');
+  const seller_name = searchParams.get('seller_name');
+  const image_url = searchParams.get('image_url');
+  const imagesJson = searchParams.get('images');
+
+  if (url) data.url = url;
+  if (title) data.title = title;
+  if (price) data.price = price;
+  if (phone) data.phone = phone;
+  if (seller_name) data.seller_name = seller_name;
+  if (image_url) data.image_url = image_url;
+  
+  if (imagesJson) {
+    try {
+      const images = JSON.parse(imagesJson);
+      if (Array.isArray(images)) data.images = images;
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  return Object.keys(data).length > 0 ? data : null;
+}
+
+// Wrapper component to handle Suspense for useSearchParams
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton count={6} />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
   // ── Data layer ──────────────────────────────────────────────────────────────
   const {
     apartments,
@@ -30,6 +73,9 @@ export default function DashboardPage() {
     refetch,
   } = useApartments();
 
+  // ── URL params for bookmarklet auto-fill ────────────────────────────────────
+  const searchParams = useSearchParams();
+
   // ── UI state ────────────────────────────────────────────────────────────────
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,6 +83,19 @@ export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [bookmarkletData, setBookmarkletData] = useState<Partial<ApartmentFormData> | null>(null);
+
+  // Check for bookmarklet auto-fill params on mount
+  useEffect(() => {
+    const data = parseBookmarkletParams(searchParams);
+    if (data) {
+      setBookmarkletData(data);
+      setEditingApartment(null);
+      setIsModalOpen(true);
+      // Clean the URL without refreshing the page
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [searchParams]);
 
   // ── Filtered list ───────────────────────────────────────────────────────────
   // "all" tab shows every apartment; other tabs filter by status value
@@ -203,6 +262,8 @@ export default function DashboardPage() {
         onClose={handleCloseModal}
         onSubmit={handleModalSubmit}
         editingApartment={editingApartment}
+        initialData={bookmarkletData}
+        onInitialDataConsumed={() => setBookmarkletData(null)}
       />
 
       {/* ── Delete Confirmation Dialog ──────────────────────────────────────── */}

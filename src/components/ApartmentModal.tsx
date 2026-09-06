@@ -25,6 +25,8 @@ interface ApartmentModalProps {
   onClose: () => void;
   onSubmit: (data: ApartmentFormData) => Promise<void>;
   editingApartment: Apartment | null;
+  initialData?: Partial<ApartmentFormData> | null;
+  onInitialDataConsumed?: () => void;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -55,6 +57,8 @@ export default function ApartmentModal({
   onClose,
   onSubmit,
   editingApartment,
+  initialData,
+  onInitialDataConsumed,
 }: ApartmentModalProps) {
   const [form, setForm]               = useState<ApartmentFormData>(EMPTY_FORM);
   const [errors, setErrors]           = useState<Partial<Record<keyof ApartmentFormData, string>>>({});
@@ -66,7 +70,7 @@ export default function ApartmentModal({
 
   const firstInputRef = useRef<HTMLInputElement>(null);
 
-  // Populate form when editing; reset when adding
+  // Populate form when editing; reset when adding; or use initialData from bookmarklet
   useEffect(() => {
     if (editingApartment) {
       setForm({
@@ -80,6 +84,20 @@ export default function ApartmentModal({
         notes:       editingApartment.notes       ?? "",
         status:      editingApartment.status,
       });
+    } else if (initialData) {
+      // Pre-fill from bookmarklet data
+      setForm({
+        ...EMPTY_FORM,
+        url:         initialData.url         ?? "",
+        title:       initialData.title       ?? "",
+        price:       initialData.price       ?? "",
+        phone:       initialData.phone       ?? "",
+        seller_name: initialData.seller_name ?? "",
+        image_url:   initialData.image_url   ?? "",
+        images:      initialData.images      ?? [],
+      });
+      // Signal that we've consumed the initial data
+      onInitialDataConsumed?.();
     } else {
       setForm(EMPTY_FORM);
     }
@@ -87,7 +105,7 @@ export default function ApartmentModal({
     setSubmitError(null);
     autoFill.reset();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingApartment, isOpen]);
+  }, [editingApartment, isOpen, initialData]);
 
   // Auto-focus URL field when modal opens
   useEffect(() => {
