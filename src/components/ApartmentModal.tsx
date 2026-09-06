@@ -1,8 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, Loader2, AlertCircle, Link, MapPin, DollarSign, Phone, Image as ImageIcon, StickyNote } from "lucide-react";
+import {
+  X,
+  Loader2,
+  AlertCircle,
+  Link,
+  MapPin,
+  DollarSign,
+  Phone,
+  Image as ImageIcon,
+  StickyNote,
+  Wand2,
+  CheckCircle2,
+  User,
+} from "lucide-react";
 import type { Apartment, ApartmentFormData, ApartmentStatus } from "@/types/database";
+import { useYad2AutoFill } from "@/hooks/useYad2AutoFill";
+
+// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface ApartmentModalProps {
   isOpen: boolean;
@@ -11,18 +27,20 @@ interface ApartmentModalProps {
   editingApartment: Apartment | null;
 }
 
-// Empty form state used when adding a new apartment
+// ── Constants ─────────────────────────────────────────────────────────────────
+
 const EMPTY_FORM: ApartmentFormData = {
   url: "",
   title: "",
   price: "",
   phone: "",
+  seller_name: "",
   image_url: "",
+  images: [],
   notes: "",
   status: "all",
 };
 
-// Status options for the inline radio selector inside the modal
 const STATUS_OPTIONS: { value: ApartmentStatus; label: string; emoji: string }[] = [
   { value: "all",      label: "Unsorted",     emoji: "🏠" },
   { value: "liked",    label: "Liked",        emoji: "❤️" },
@@ -30,40 +48,48 @@ const STATUS_OPTIONS: { value: ApartmentStatus; label: string; emoji: string }[]
   { value: "rejected", label: "Rejected",     emoji: "❌" },
 ];
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function ApartmentModal({
   isOpen,
   onClose,
   onSubmit,
   editingApartment,
 }: ApartmentModalProps) {
-  const [form, setForm] = useState<ApartmentFormData>(EMPTY_FORM);
-  const [errors, setErrors] = useState<Partial<Record<keyof ApartmentFormData, string>>>({});
-  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm]               = useState<ApartmentFormData>(EMPTY_FORM);
+  const [errors, setErrors]           = useState<Partial<Record<keyof ApartmentFormData, string>>>({});
+  const [submitting, setSubmitting]   = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Focus the first input when the modal opens
+  // Auto-fill: iframe-first, server-side API fallback
+  const autoFill = useYad2AutoFill();
+
   const firstInputRef = useRef<HTMLInputElement>(null);
 
-  // Populate form when editing an existing apartment
+  // Populate form when editing; reset when adding
   useEffect(() => {
     if (editingApartment) {
       setForm({
-        url:       editingApartment.url       ?? "",
-        title:     editingApartment.title,
-        price:     String(editingApartment.price),
-        phone:     editingApartment.phone     ?? "",
-        image_url: editingApartment.image_url ?? "",
-        notes:     editingApartment.notes     ?? "",
-        status:    editingApartment.status,
+        url:         editingApartment.url         ?? "",
+        title:       editingApartment.title,
+        price:       String(editingApartment.price),
+        phone:       editingApartment.phone       ?? "",
+        seller_name: editingApartment.seller_name ?? "",
+        image_url:   editingApartment.image_url   ?? "",
+        images:      editingApartment.images      ?? [],
+        notes:       editingApartment.notes       ?? "",
+        status:      editingApartment.status,
       });
     } else {
       setForm(EMPTY_FORM);
     }
     setErrors({});
     setSubmitError(null);
+    autoFill.reset();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingApartment, isOpen]);
 
-  // Auto-focus first field after modal opens
+  // Auto-focus URL field when modal opens
   useEffect(() => {
     if (isOpen) {
       const timer = setTimeout(() => firstInputRef.current?.focus(), 80);
@@ -86,20 +112,44 @@ export default function ApartmentModal({
 
   // Lock body scroll while modal is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
   // ── Field update helper ───────────────────────────────────────────────────
-  const setField = <K extends keyof ApartmentFormData>(key: K, value: ApartmentFormData[K]) => {
+  const setField = <K extends keyof ApartmentFormData>(
+    key: K,
+    value: ApartmentFormData[K]
+  ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    // Clear the field-level error as the user types
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
+    // Reset auto-fill feedback when the URL changes
+    if (key === "url") autoFill.reset();
   };
+
+  // ── Auto-Fill handler ─────────────────────────────────────────────────────
+  const handleAutoFill = useCallback(async () => {
+    const scraped = await autoFill.trigger(form.url.trim());
+    if (!scraped) return;
+
+    // Only overwrite fields that returned a non-empty value
+    setForm((prev) => ({
+      ...prev,
+      title:       scraped.title       || prev.title,
+      price:       scraped.price       || prev.price,
+      phone:       scraped.phone       || prev.phone,
+      seller_name: scraped.seller_name || prev.seller_name,
+      image_url:   scraped.image_url   || prev.image_url,
+      images:      scraped.images?.length ? scraped.images : prev.images,
+    }));
+
+    // Clear field-level errors for any newly populated fields
+    setErrors((prev) => ({
+      ...prev,
+      title: scraped.title ? undefined : prev.title,
+      price: scraped.price ? undefined : prev.price,
+    }));
+  }, [form.url, autoFill]);
 
   // ── Validation ────────────────────────────────────────────────────────────
   const validate = (): boolean => {
@@ -108,18 +158,15 @@ export default function ApartmentModal({
     if (!form.title.trim()) {
       newErrors.title = "Title / address is required.";
     }
-
     const priceNum = Number(form.price);
     if (!form.price.trim()) {
       newErrors.price = "Price is required.";
     } else if (isNaN(priceNum) || priceNum < 0) {
       newErrors.price = "Price must be a positive number.";
     }
-
     if (form.url.trim() && !/^https?:\/\/.+/.test(form.url.trim())) {
       newErrors.url = "URL must start with http:// or https://";
     }
-
     if (form.image_url.trim() && !/^https?:\/\/.+/.test(form.image_url.trim())) {
       newErrors.image_url = "Image URL must start with http:// or https://";
     }
@@ -128,19 +175,20 @@ export default function ApartmentModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
+  // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setSubmitting(true);
     setSubmitError(null);
-
     try {
       await onSubmit(form);
       onClose();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setSubmitError(
+        err instanceof Error ? err.message : "Something went wrong. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -148,34 +196,37 @@ export default function ApartmentModal({
 
   if (!isOpen) return null;
 
-  const isEditing = Boolean(editingApartment);
+  const isEditing   = Boolean(editingApartment);
+  const isYad2Url   = form.url.trim().includes("yad2.co.il");
+  const canAutoFill = isYad2Url && autoFill.status !== "loading";
 
   return (
-    // Backdrop
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      {/* Dimmed overlay — click to close */}
+      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => { if (!submitting) onClose(); }}
         aria-hidden="true"
       />
 
-      {/* Modal panel */}
+      {/* Panel */}
       <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-modal animate-slide-up max-h-[95dvh] flex flex-col">
 
-        {/* ── Header ───────────────────────────────────────────────────────── */}
+        {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 flex-shrink-0">
           <div>
             <h2 id="modal-title" className="text-lg font-bold text-slate-900">
               {isEditing ? "Edit Apartment" : "Add New Apartment"}
             </h2>
             <p className="text-sm text-slate-400 mt-0.5">
-              {isEditing ? "Update the details below." : "Fill in what you know — all fields except title and price are optional."}
+              {isEditing
+                ? "Update the details below."
+                : "Paste a Yad2 URL and click Auto-Fill 🪄, or fill in manually."}
             </p>
           </div>
           <button
@@ -187,7 +238,7 @@ export default function ApartmentModal({
           </button>
         </div>
 
-        {/* ── Scrollable Form Body ─────────────────────────────────────────── */}
+        {/* ── Scrollable body ─────────────────────────────────────────────── */}
         <div className="overflow-y-auto custom-scroll flex-1 px-6 py-4">
           <form id="apartment-form" onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
 
@@ -199,25 +250,83 @@ export default function ApartmentModal({
               </div>
             )}
 
-            {/* Source URL */}
+            {/* ── URL field + Auto-Fill button ──────────────────────────── */}
             <Field
               label="Listing URL"
               icon={<Link className="w-4 h-4" />}
               error={errors.url}
-              hint="Yad2 or Facebook link"
+              hint="Paste a Yad2 link to auto-fill"
             >
-              <input
-                ref={firstInputRef}
-                type="url"
-                value={form.url}
-                onChange={(e) => setField("url", e.target.value)}
-                placeholder="https://www.yad2.co.il/item/..."
-                className={inputClass(!!errors.url)}
-                autoComplete="off"
-              />
+              <div className="flex gap-2">
+                <input
+                  ref={firstInputRef}
+                  type="url"
+                  value={form.url}
+                  onChange={(e) => setField("url", e.target.value)}
+                  placeholder="https://www.yad2.co.il/item/..."
+                  className={`${inputClass(!!errors.url)} flex-1 min-w-0`}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  onClick={handleAutoFill}
+                  disabled={!canAutoFill}
+                  aria-label="Auto-fill from Yad2"
+                  title={isYad2Url ? "Auto-fill from Yad2" : "Paste a Yad2 URL first"}
+                  className={`
+                    flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl
+                    text-sm font-semibold border transition-all duration-150
+                    ${
+                      autoFill.status === "success"
+                        ? "bg-green-50 border-green-300 text-green-700"
+                        : canAutoFill
+                        ? "bg-brand-600 border-brand-600 text-white hover:bg-brand-700 shadow-sm active:scale-95"
+                        : "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                    }
+                  `}
+                >
+                  {autoFill.status === "loading" ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : autoFill.status === "success" ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    <Wand2 className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {autoFill.status === "loading"
+                      ? "Filling…"
+                      : autoFill.status === "success"
+                      ? "Filled!"
+                      : "Auto-Fill"}
+                  </span>
+                </button>
+              </div>
             </Field>
 
-            {/* Title / Address — required */}
+            {/* Auto-fill error / captcha banner */}
+            {(autoFill.status === "error" || autoFill.status === "captcha") &&
+              autoFill.errorMessage && (
+                <div
+                  className={`flex items-start gap-2 p-3 rounded-xl text-sm border animate-fade-in ${
+                    autoFill.status === "captcha"
+                      ? "bg-amber-50 border-amber-200 text-amber-700"
+                      : "bg-red-50 border-red-200 text-red-700"
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{autoFill.errorMessage}</span>
+                </div>
+              )}
+
+            {/* Auto-fill success confirmation */}
+            {autoFill.status === "success" && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>Fields filled from Yad2. Review and adjust if needed.</span>
+              </div>
+            )}
+
+            {/* ── Title / Address ──────────────────────────────────────── */}
             <Field
               label="Title / Address"
               icon={<MapPin className="w-4 h-4" />}
@@ -234,7 +343,7 @@ export default function ApartmentModal({
               />
             </Field>
 
-            {/* Price — required */}
+            {/* ── Price ────────────────────────────────────────────────── */}
             <Field
               label="Monthly Price (₪)"
               icon={<DollarSign className="w-4 h-4" />}
@@ -251,7 +360,7 @@ export default function ApartmentModal({
               />
             </Field>
 
-            {/* Phone */}
+            {/* ── Phone ────────────────────────────────────────────────── */}
             <Field
               label="Phone Number"
               icon={<Phone className="w-4 h-4" />}
@@ -267,7 +376,23 @@ export default function ApartmentModal({
               />
             </Field>
 
-            {/* Image URL */}
+            {/* ── Seller Name ──────────────────────────────────────────── */}
+            <Field
+              label="Seller / Contact Name"
+              icon={<User className="w-4 h-4" />}
+              error={errors.seller_name}
+            >
+              <input
+                type="text"
+                value={form.seller_name}
+                onChange={(e) => setField("seller_name", e.target.value)}
+                placeholder="David, Sarah, etc."
+                className={inputClass(!!errors.seller_name)}
+                autoComplete="off"
+              />
+            </Field>
+
+            {/* ── Image URL ────────────────────────────────────────────── */}
             <Field
               label="Image URL"
               icon={<ImageIcon className="w-4 h-4" />}
@@ -284,7 +409,7 @@ export default function ApartmentModal({
               />
             </Field>
 
-            {/* Shared notes */}
+            {/* ── Shared Notes ─────────────────────────────────────────── */}
             <Field
               label="Shared Notes"
               icon={<StickyNote className="w-4 h-4" />}
@@ -300,7 +425,7 @@ export default function ApartmentModal({
               />
             </Field>
 
-            {/* Status selector */}
+            {/* ── Status selector ──────────────────────────────────────── */}
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">Status</label>
               <div className="grid grid-cols-2 gap-2">
@@ -329,7 +454,7 @@ export default function ApartmentModal({
           </form>
         </div>
 
-        {/* ── Footer ───────────────────────────────────────────────────────── */}
+        {/* ── Footer ─────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0">
           <button
             type="button"
@@ -355,7 +480,7 @@ export default function ApartmentModal({
   );
 }
 
-// ── Small helper sub-components ──────────────────────────────────────────────
+// ── Helper sub-components ─────────────────────────────────────────────────────
 
 function inputClass(hasError: boolean): string {
   return `

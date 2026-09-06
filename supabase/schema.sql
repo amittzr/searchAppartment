@@ -15,12 +15,21 @@ create table if not exists public.apartments (
   title       text not null,                 -- apartment title or address
   price       integer not null default 0,    -- monthly rent in local currency (used for sorting)
   phone       text,                          -- landlord / agent phone number
+  seller_name text,                          -- name of the seller/landlord
   image_url   text,                          -- hero image for the card
+  images      jsonb,                         -- array of all image URLs for gallery view
   status      text not null default 'all'    -- reaction: 'all' | 'liked' | 'review' | 'rejected'
                 check (status in ('all', 'liked', 'review', 'rejected')),
   notes       text,                          -- shared notes visible to both partners
   created_at  timestamptz not null default now()
 );
+
+-- ============================================================
+-- Migration: Add new columns if table already exists
+-- Run these if upgrading an existing installation
+-- ============================================================
+-- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS seller_name text;
+-- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS images jsonb;
 
 -- ============================================================
 -- Row Level Security (RLS)

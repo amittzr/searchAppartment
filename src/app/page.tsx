@@ -71,13 +71,15 @@ export default function DashboardPage() {
   // Called by ApartmentModal on valid submit
   const handleModalSubmit = async (formData: ApartmentFormData) => {
     const payload = {
-      url:       formData.url.trim()       || null,
-      title:     formData.title.trim(),
-      price:     Number(formData.price),
-      phone:     formData.phone.trim()     || null,
-      image_url: formData.image_url.trim() || null,
-      notes:     formData.notes.trim()     || null,
-      status:    formData.status,
+      url:         formData.url.trim()         || null,
+      title:       formData.title.trim(),
+      price:       Number(formData.price),
+      phone:       formData.phone.trim()       || null,
+      seller_name: formData.seller_name.trim() || null,
+      image_url:   formData.image_url.trim()   || null,
+      images:      formData.images.length > 0 ? formData.images : null,
+      notes:       formData.notes.trim()       || null,
+      status:      formData.status,
     };
 
     let result: { error: string | null };

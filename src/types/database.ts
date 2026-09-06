@@ -12,7 +12,9 @@ export interface Apartment {
   title: string;
   price: number;
   phone: string | null;
+  seller_name: string | null;
   image_url: string | null;
+  images: string[] | null;  // Array of all image URLs for gallery
   status: ApartmentStatus;
   notes: string | null;
   created_at: string;
@@ -26,7 +28,9 @@ export interface ApartmentInsert {
   title: string;
   price: number;
   phone?: string | null;
+  seller_name?: string | null;
   image_url?: string | null;
+  images?: string[] | null;
   status?: ApartmentStatus;
   notes?: string | null;
 }
@@ -39,7 +43,9 @@ export interface ApartmentUpdate {
   title?: string;
   price?: number;
   phone?: string | null;
+  seller_name?: string | null;
   image_url?: string | null;
+  images?: string[] | null;
   status?: ApartmentStatus;
   notes?: string | null;
 }
@@ -85,7 +91,9 @@ export interface ApartmentFormData {
   title: string;
   price: string;
   phone: string;
+  seller_name: string;
   image_url: string;
+  images: string[];
   notes: string;
   status: ApartmentStatus;
 }
