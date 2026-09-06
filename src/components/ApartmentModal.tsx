@@ -72,6 +72,8 @@ export default function ApartmentModal({
 
   // Populate form when editing; reset when adding; or use initialData from bookmarklet
   useEffect(() => {
+    if (!isOpen) return; // Only run when modal is open
+    
     if (editingApartment) {
       setForm({
         url:         editingApartment.url         ?? "",
@@ -84,7 +86,7 @@ export default function ApartmentModal({
         notes:       editingApartment.notes       ?? "",
         status:      editingApartment.status,
       });
-    } else if (initialData) {
+    } else if (initialData && Object.keys(initialData).length > 0) {
       // Pre-fill from bookmarklet data
       setForm({
         ...EMPTY_FORM,
@@ -96,16 +98,16 @@ export default function ApartmentModal({
         image_url:   initialData.image_url   ?? "",
         images:      initialData.images      ?? [],
       });
-      // Signal that we've consumed the initial data
-      onInitialDataConsumed?.();
-    } else {
+      // Signal that we've consumed the initial data (after a tick to avoid re-render during render)
+      setTimeout(() => onInitialDataConsumed?.(), 0);
+    } else if (!editingApartment && !initialData) {
       setForm(EMPTY_FORM);
     }
     setErrors({});
     setSubmitError(null);
     autoFill.reset();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingApartment, isOpen, initialData]);
+  }, [editingApartment, isOpen]);
 
   // Auto-focus URL field when modal opens
   useEffect(() => {
