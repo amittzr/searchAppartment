@@ -1,0 +1,398 @@
+"use client";
+
+import { useEffect, useRef, useState, useCallback } from "react";
+import { X, Loader2, AlertCircle, Link, MapPin, DollarSign, Phone, Image as ImageIcon, StickyNote } from "lucide-react";
+import type { Apartment, ApartmentFormData, ApartmentStatus } from "@/types/database";
+
+interface ApartmentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: ApartmentFormData) => Promise<void>;
+  editingApartment: Apartment | null;
+}
+
+// Empty form state used when adding a new apartment
+const EMPTY_FORM: ApartmentFormData = {
+  url: "",
+  title: "",
+  price: "",
+  phone: "",
+  image_url: "",
+  notes: "",
+  status: "all",
+};
+
+// Status options for the inline radio selector inside the modal
+const STATUS_OPTIONS: { value: ApartmentStatus; label: string; emoji: string }[] = [
+  { value: "all",      label: "Unsorted",     emoji: "🏠" },
+  { value: "liked",    label: "Liked",        emoji: "❤️" },
+  { value: "review",   label: "Review Later", emoji: "🤔" },
+  { value: "rejected", label: "Rejected",     emoji: "❌" },
+];
+
+export default function ApartmentModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  editingApartment,
+}: ApartmentModalProps) {
+  const [form, setForm] = useState<ApartmentFormData>(EMPTY_FORM);
+  const [errors, setErrors] = useState<Partial<Record<keyof ApartmentFormData, string>>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Focus the first input when the modal opens
+  const firstInputRef = useRef<HTMLInputElement>(null);
+
+  // Populate form when editing an existing apartment
+  useEffect(() => {
+    if (editingApartment) {
+      setForm({
+        url:       editingApartment.url       ?? "",
+        title:     editingApartment.title,
+        price:     String(editingApartment.price),
+        phone:     editingApartment.phone     ?? "",
+        image_url: editingApartment.image_url ?? "",
+        notes:     editingApartment.notes     ?? "",
+        status:    editingApartment.status,
+      });
+    } else {
+      setForm(EMPTY_FORM);
+    }
+    setErrors({});
+    setSubmitError(null);
+  }, [editingApartment, isOpen]);
+
+  // Auto-focus first field after modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => firstInputRef.current?.focus(), 80);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  // Close on Escape key
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !submitting) onClose();
+    },
+    [onClose, submitting]
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
+  // ── Field update helper ───────────────────────────────────────────────────
+  const setField = <K extends keyof ApartmentFormData>(key: K, value: ApartmentFormData[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    // Clear the field-level error as the user types
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  // ── Validation ────────────────────────────────────────────────────────────
+  const validate = (): boolean => {
+    const newErrors: Partial<Record<keyof ApartmentFormData, string>> = {};
+
+    if (!form.title.trim()) {
+      newErrors.title = "Title / address is required.";
+    }
+
+    const priceNum = Number(form.price);
+    if (!form.price.trim()) {
+      newErrors.price = "Price is required.";
+    } else if (isNaN(priceNum) || priceNum < 0) {
+      newErrors.price = "Price must be a positive number.";
+    }
+
+    if (form.url.trim() && !/^https?:\/\/.+/.test(form.url.trim())) {
+      newErrors.url = "URL must start with http:// or https://";
+    }
+
+    if (form.image_url.trim() && !/^https?:\/\/.+/.test(form.image_url.trim())) {
+      newErrors.image_url = "Image URL must start with http:// or https://";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      await onSubmit(form);
+      onClose();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const isEditing = Boolean(editingApartment);
+
+  return (
+    // Backdrop
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      {/* Dimmed overlay — click to close */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={() => { if (!submitting) onClose(); }}
+        aria-hidden="true"
+      />
+
+      {/* Modal panel */}
+      <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-modal animate-slide-up max-h-[95dvh] flex flex-col">
+
+        {/* ── Header ───────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 flex-shrink-0">
+          <div>
+            <h2 id="modal-title" className="text-lg font-bold text-slate-900">
+              {isEditing ? "Edit Apartment" : "Add New Apartment"}
+            </h2>
+            <p className="text-sm text-slate-400 mt-0.5">
+              {isEditing ? "Update the details below." : "Fill in what you know — all fields except title and price are optional."}
+            </p>
+          </div>
+          <button
+            onClick={() => { if (!submitting) onClose(); }}
+            aria-label="Close modal"
+            className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-5 h-5" strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* ── Scrollable Form Body ─────────────────────────────────────────── */}
+        <div className="overflow-y-auto custom-scroll flex-1 px-6 py-4">
+          <form id="apartment-form" onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+
+            {/* Global submit error */}
+            {submitError && (
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{submitError}</span>
+              </div>
+            )}
+
+            {/* Source URL */}
+            <Field
+              label="Listing URL"
+              icon={<Link className="w-4 h-4" />}
+              error={errors.url}
+              hint="Yad2 or Facebook link"
+            >
+              <input
+                ref={firstInputRef}
+                type="url"
+                value={form.url}
+                onChange={(e) => setField("url", e.target.value)}
+                placeholder="https://www.yad2.co.il/item/..."
+                className={inputClass(!!errors.url)}
+                autoComplete="off"
+              />
+            </Field>
+
+            {/* Title / Address — required */}
+            <Field
+              label="Title / Address"
+              icon={<MapPin className="w-4 h-4" />}
+              error={errors.title}
+              required
+            >
+              <input
+                type="text"
+                value={form.title}
+                onChange={(e) => setField("title", e.target.value)}
+                placeholder="3 rooms, Florentine, Tel Aviv"
+                className={inputClass(!!errors.title)}
+                autoComplete="off"
+              />
+            </Field>
+
+            {/* Price — required */}
+            <Field
+              label="Monthly Price (₪)"
+              icon={<DollarSign className="w-4 h-4" />}
+              error={errors.price}
+              required
+            >
+              <input
+                type="number"
+                min="0"
+                value={form.price}
+                onChange={(e) => setField("price", e.target.value)}
+                placeholder="6500"
+                className={inputClass(!!errors.price)}
+              />
+            </Field>
+
+            {/* Phone */}
+            <Field
+              label="Phone Number"
+              icon={<Phone className="w-4 h-4" />}
+              error={errors.phone}
+            >
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setField("phone", e.target.value)}
+                placeholder="050-123-4567"
+                className={inputClass(!!errors.phone)}
+                autoComplete="tel"
+              />
+            </Field>
+
+            {/* Image URL */}
+            <Field
+              label="Image URL"
+              icon={<ImageIcon className="w-4 h-4" />}
+              error={errors.image_url}
+              hint="Direct link to a photo"
+            >
+              <input
+                type="url"
+                value={form.image_url}
+                onChange={(e) => setField("image_url", e.target.value)}
+                placeholder="https://..."
+                className={inputClass(!!errors.image_url)}
+                autoComplete="off"
+              />
+            </Field>
+
+            {/* Shared notes */}
+            <Field
+              label="Shared Notes"
+              icon={<StickyNote className="w-4 h-4" />}
+              error={errors.notes}
+              hint="Visible to both of you"
+            >
+              <textarea
+                value={form.notes}
+                onChange={(e) => setField("notes", e.target.value)}
+                placeholder="Nice balcony, close to the train station..."
+                rows={3}
+                className={`${inputClass(!!errors.notes)} resize-none`}
+              />
+            </Field>
+
+            {/* Status selector */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">Status</label>
+              <div className="grid grid-cols-2 gap-2">
+                {STATUS_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setField("status", opt.value)}
+                    className={`
+                      flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium
+                      transition-all duration-150
+                      ${
+                        form.status === opt.value
+                          ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      }
+                    `}
+                  >
+                    <span role="img" aria-hidden="true">{opt.emoji}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </form>
+        </div>
+
+        {/* ── Footer ───────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => { if (!submitting) onClose(); }}
+            disabled={submitting}
+            className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="apartment-form"
+            disabled={submitting}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-brand-600 hover:to-brand-800 active:scale-95 transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+          >
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            {submitting ? "Saving…" : isEditing ? "Save Changes" : "Add Apartment"}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ── Small helper sub-components ──────────────────────────────────────────────
+
+function inputClass(hasError: boolean): string {
+  return `
+    w-full px-3 py-2.5 rounded-xl border text-sm text-slate-900 bg-white
+    placeholder:text-slate-400 transition-colors duration-150
+    focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent
+    ${hasError ? "border-red-400 bg-red-50" : "border-slate-200 hover:border-slate-300"}
+  `;
+}
+
+interface FieldProps {
+  label: string;
+  icon: React.ReactNode;
+  error?: string;
+  hint?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}
+
+function Field({ label, icon, error, hint, required, children }: FieldProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+        <span className="text-slate-400">{icon}</span>
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {hint && !error && (
+          <span className="text-slate-400 font-normal text-xs ml-1">— {hint}</span>
+        )}
+      </label>
+      {children}
+      {error && (
+        <p className="flex items-center gap-1 text-xs text-red-500 font-medium">
+          <AlertCircle className="w-3 h-3 flex-shrink-0" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
