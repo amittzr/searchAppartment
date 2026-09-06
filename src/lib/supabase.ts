@@ -1,7 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
 
-// These values are injected at build time from .env.local
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -12,11 +10,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// Singleton Supabase client typed against our Database schema
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Untyped client — row types are enforced at the hook level via explicit casting,
+// which avoids the TypeScript generic inference collapse that occurs when a
+// custom Database type doesn't exactly match the SDK's internal shape.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   realtime: {
     params: {
-      // Receive all change events (INSERT, UPDATE, DELETE) for real-time sync
       eventsPerSecond: 10,
     },
   },

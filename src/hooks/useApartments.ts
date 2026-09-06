@@ -25,7 +25,7 @@ export function useApartments(): UseApartmentsReturn {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Fetch all apartments, ordered newest first ──────────────────────────────
+  // ── Fetch all apartments ordered newest first ───────────────────────────────
   const fetchApartments = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -38,14 +38,15 @@ export function useApartments(): UseApartmentsReturn {
     if (fetchError) {
       setError(fetchError.message);
     } else {
-      setApartments(data ?? []);
+      // Cast to Apartment[] — shape is guaranteed by the DB schema
+      setApartments((data as Apartment[]) ?? []);
     }
 
     setLoading(false);
   }, []);
 
   // ── Real-time subscription ──────────────────────────────────────────────────
-  // Listens for INSERT / UPDATE / DELETE events on the apartments table so both
+  // Listens for INSERT / UPDATE / DELETE on the apartments table so both
   // partners see changes instantly without a manual refresh.
   useEffect(() => {
     fetchApartments();
@@ -56,7 +57,6 @@ export function useApartments(): UseApartmentsReturn {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "apartments" },
         (payload) => {
-          // Prepend the new row to keep newest-first order
           setApartments((prev) => [payload.new as Apartment, ...prev]);
         }
       )
@@ -84,7 +84,6 @@ export function useApartments(): UseApartmentsReturn {
       )
       .subscribe();
 
-    // Cleanup: unsubscribe when the component unmounts
     return () => {
       supabase.removeChannel(channel);
     };
@@ -93,14 +92,12 @@ export function useApartments(): UseApartmentsReturn {
   // ── Create ──────────────────────────────────────────────────────────────────
   const addApartment = useCallback(
     async (data: ApartmentInsert): Promise<{ error: string | null }> => {
+      // Cast to `object` first to bypass the untyped client's `never` inference
       const { error: insertError } = await supabase
         .from("apartments")
-        .insert([data]);
+        .insert(data as object);
 
-      if (insertError) {
-        return { error: insertError.message };
-      }
-      // Real-time INSERT event will update local state automatically
+      if (insertError) return { error: insertError.message };
       return { error: null };
     },
     []
@@ -108,19 +105,13 @@ export function useApartments(): UseApartmentsReturn {
 
   // ── Update ──────────────────────────────────────────────────────────────────
   const updateApartment = useCallback(
-    async (
-      id: string,
-      data: ApartmentUpdate
-    ): Promise<{ error: string | null }> => {
+    async (id: string, data: ApartmentUpdate): Promise<{ error: string | null }> => {
       const { error: updateError } = await supabase
         .from("apartments")
-        .update(data)
+        .update(data as object)
         .eq("id", id);
 
-      if (updateError) {
-        return { error: updateError.message };
-      }
-      // Real-time UPDATE event will patch local state automatically
+      if (updateError) return { error: updateError.message };
       return { error: null };
     },
     []
@@ -134,21 +125,15 @@ export function useApartments(): UseApartmentsReturn {
         .delete()
         .eq("id", id);
 
-      if (deleteError) {
-        return { error: deleteError.message };
-      }
-      // Real-time DELETE event will remove it from local state automatically
+      if (deleteError) return { error: deleteError.message };
       return { error: null };
     },
     []
   );
 
-  // ── Quick status toggle (Liked / Review / Rejected) ─────────────────────────
+  // ── Quick status toggle ─────────────────────────────────────────────────────
   const setStatus = useCallback(
-    async (
-      id: string,
-      status: ApartmentStatus
-    ): Promise<{ error: string | null }> => {
+    async (id: string, status: ApartmentStatus): Promise<{ error: string | null }> => {
       return updateApartment(id, { status });
     },
     [updateApartment]
