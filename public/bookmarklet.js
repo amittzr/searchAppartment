@@ -77,11 +77,19 @@
       }
     }
 
-    // Fallback: try to find phone in the page DOM
+    // Fallback: try to find phone in the page DOM (if user clicked "show phone")
     if (!data.phone) {
       const phoneLinks = document.querySelectorAll('a[href^="tel:"]');
       if (phoneLinks.length > 0) {
         data.phone = phoneLinks[0].href.replace('tel:', '');
+      }
+    }
+    
+    // Fallback: look for Israeli phone pattern in contact section
+    if (!data.phone) {
+      const phonePatterns = document.body.innerText.match(/0[5-9][0-9][-\s]?[0-9]{3}[-\s]?[0-9]{4}/g);
+      if (phonePatterns && phonePatterns.length > 0) {
+        data.phone = phonePatterns[0].replace(/[-\s]/g, '');
       }
     }
 
