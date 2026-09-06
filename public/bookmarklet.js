@@ -4,7 +4,7 @@
  * This script extracts apartment data from a Yad2 listing page
  * and redirects to the ApartmentTracker app with the data pre-filled.
  * 
- * To use: Create a bookmark with this as the URL (minified version below)
+ * Updated: 2026-09 - Yad2 now uses dehydratedState structure
  */
 
 (function() {
@@ -23,14 +23,16 @@
     }
 
     const nextData = JSON.parse(nextDataEl.textContent);
-    const pageProps = nextData?.props?.pageProps;
-
-    if (!pageProps) {
-      alert('Could not parse listing data.');
+    
+    // New structure: data is in dehydratedState.queries[0].state.data
+    const itemData = nextData?.props?.pageProps?.dehydratedState?.queries?.[0]?.state?.data;
+    
+    if (!itemData) {
+      alert('Could not parse listing data. Make sure you are on a single listing page.');
       return;
     }
 
-    // Extract all the fields
+    // Extract all the fields from the new structure
     const data = {
       url: window.location.href,
       title: '',
@@ -41,48 +43,41 @@
       images: []
     };
 
-    // Address/Title
-    if (pageProps.addressTitle?.title) {
-      data.title = pageProps.addressTitle.title;
-    } else if (pageProps.title) {
-      data.title = pageProps.title;
+    // Address/Title - build from address components
+    const addr = itemData.address;
+    if (addr) {
+      const parts = [];
+      if (addr.street?.text) parts.push(addr.street.text);
+      if (addr.houseNumber?.number) parts.push(addr.houseNumber.number);
+      if (addr.neighborhood?.text) parts.push(addr.neighborhood.text);
+      if (addr.city?.text) parts.push(addr.city.text);
+      data.title = parts.join(', ');
     }
 
     // Price
-    if (pageProps.price) {
-      // Remove currency symbols and commas
-      data.price = String(pageProps.price).replace(/[^\d]/g, '');
+    if (itemData.price) {
+      data.price = String(itemData.price).replace(/[^\d]/g, '');
     }
 
-    // Phone - try multiple sources
-    if (pageProps.contactInfo?.phone) {
-      data.phone = pageProps.contactInfo.phone;
-    } else if (pageProps.sellerInfo?.phone) {
-      data.phone = pageProps.sellerInfo.phone;
+    // Seller name from customer
+    if (itemData.customer?.name) {
+      data.seller_name = itemData.customer.name;
     }
 
-    // Seller name
-    if (pageProps.contactInfo?.name) {
-      data.seller_name = pageProps.contactInfo.name;
-    } else if (pageProps.sellerInfo?.name) {
-      data.seller_name = pageProps.sellerInfo.name;
+    // Phone from customer (might be undefined if virtual)
+    if (itemData.customer?.phone) {
+      data.phone = itemData.customer.phone;
     }
 
-    // Images
-    if (pageProps.metaData?.images && Array.isArray(pageProps.metaData.images)) {
-      data.images = pageProps.metaData.images;
-      if (data.images.length > 0) {
-        data.image_url = data.images[0];
-      }
-    } else if (pageProps.images && Array.isArray(pageProps.images)) {
-      data.images = pageProps.images;
+    // Images from metaData
+    if (itemData.metaData?.images && Array.isArray(itemData.metaData.images)) {
+      data.images = itemData.metaData.images;
       if (data.images.length > 0) {
         data.image_url = data.images[0];
       }
     }
 
-    // If we couldn't get phone from __NEXT_DATA__, it might be loaded dynamically
-    // Try to find it in the page DOM as fallback
+    // Fallback: try to find phone in the page DOM
     if (!data.phone) {
       const phoneLinks = document.querySelectorAll('a[href^="tel:"]');
       if (phoneLinks.length > 0) {
@@ -91,7 +86,6 @@
     }
 
     // Build the redirect URL
-    // Your app's URL - change this to your production URL
     const appUrl = 'https://search-appartment.vercel.app';
     
     const params = new URLSearchParams();
