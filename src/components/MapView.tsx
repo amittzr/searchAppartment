@@ -243,7 +243,8 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
           {/* Selected apartment card */}
           {selectedApartment && (
             <div 
-              className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-slide-up z-20"
+              className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-slide-up"
+              style={{ zIndex: 1000 }}
               onClick={(e) => e.stopPropagation()}
             >
               <button
