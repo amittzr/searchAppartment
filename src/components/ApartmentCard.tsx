@@ -17,28 +17,24 @@ import {
   ChevronRight,
   Expand,
   Images,
+  BedDouble,
 } from "lucide-react";
-import type { Apartment, ApartmentStatus } from "@/types/database";
+import type { Apartment, ReactionStatus } from "@/types/database";
 
 interface ApartmentCardProps {
   apartment: Apartment;
+  username: string;
+  partnerName: string;
   onEdit: (apartment: Apartment) => void;
   onDelete: (id: string) => void;
-  onStatusChange: (id: string, status: ApartmentStatus) => void;
+  onReactionChange: (id: string, username: string, reaction: ReactionStatus | null) => void;
 }
 
-// ── Status configuration ─────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<
-  ApartmentStatus,
+// ── Reaction configuration ───────────────────────────────────────────────────
+const REACTION_CONFIG: Record<
+  ReactionStatus,
   { label: string; emoji: string; bgClass: string; textClass: string; borderClass: string }
 > = {
-  all: {
-    label: "Unsorted",
-    emoji: "🏠",
-    bgClass: "bg-slate-100",
-    textClass: "text-slate-600",
-    borderClass: "border-slate-200",
-  },
   liked: {
     label: "Liked",
     emoji: "❤️",
@@ -47,7 +43,7 @@ const STATUS_CONFIG: Record<
     borderClass: "border-red-200",
   },
   review: {
-    label: "Review Later",
+    label: "Review",
     emoji: "🤔",
     bgClass: "bg-amber-50",
     textClass: "text-amber-600",
@@ -56,34 +52,33 @@ const STATUS_CONFIG: Record<
   rejected: {
     label: "Rejected",
     emoji: "❌",
-    bgClass: "bg-slate-50",
-    textClass: "text-slate-400",
+    bgClass: "bg-slate-100",
+    textClass: "text-slate-500",
     borderClass: "border-slate-200",
   },
 };
 
-// Status cycle buttons shown at the bottom of each card
-const STATUS_ACTIONS: { status: ApartmentStatus; icon: React.ReactNode; label: string; activeClass: string }[] =
-  [
-    {
-      status: "liked",
-      icon: <Heart className="w-4 h-4" />,
-      label: "Like",
-      activeClass: "bg-red-500 text-white border-red-500",
-    },
-    {
-      status: "review",
-      icon: <Clock className="w-4 h-4" />,
-      label: "Review Later",
-      activeClass: "bg-amber-400 text-white border-amber-400",
-    },
-    {
-      status: "rejected",
-      icon: <X className="w-4 h-4" strokeWidth={2.5} />,
-      label: "Reject",
-      activeClass: "bg-slate-400 text-white border-slate-400",
-    },
-  ];
+// Reaction buttons for user selection
+const REACTION_ACTIONS: { reaction: ReactionStatus; icon: React.ReactNode; label: string; activeClass: string }[] = [
+  {
+    reaction: "liked",
+    icon: <Heart className="w-4 h-4" />,
+    label: "Like",
+    activeClass: "bg-red-500 text-white border-red-500",
+  },
+  {
+    reaction: "review",
+    icon: <Clock className="w-4 h-4" />,
+    label: "Review",
+    activeClass: "bg-amber-400 text-white border-amber-400",
+  },
+  {
+    reaction: "rejected",
+    icon: <X className="w-4 h-4" strokeWidth={2.5} />,
+    label: "Reject",
+    activeClass: "bg-slate-400 text-white border-slate-400",
+  },
+];
 
 // Detect whether a URL looks like a Yad2 or Facebook listing
 function detectSource(url: string | null): string | null {
@@ -100,14 +95,28 @@ function formatPrice(price: number): string {
 
 export default function ApartmentCard({
   apartment,
+  username,
+  partnerName,
   onEdit,
   onDelete,
-  onStatusChange,
+  onReactionChange,
 }: ApartmentCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  const statusCfg = STATUS_CONFIG[apartment.status];
+  // Get reactions for both users
+  const myReaction = apartment.reactions?.[username] || null;
+  const partnerReaction = apartment.reactions?.[partnerName] || null;
+  
+  // Determine card border color based on consensus
+  const bothLiked = myReaction === "liked" && partnerReaction === "liked";
+  const anyRejected = myReaction === "rejected" || partnerReaction === "rejected";
+  const cardBorderClass = bothLiked 
+    ? "border-green-300 ring-2 ring-green-100" 
+    : anyRejected 
+      ? "border-slate-200 opacity-60 hover:opacity-100" 
+      : "border-slate-200";
+  
   const source = detectSource(apartment.url);
   
   // Get all images - use images array if available, otherwise fallback to single image_url
@@ -117,9 +126,9 @@ export default function ApartmentCard({
       ? [apartment.image_url] 
       : [];
 
-  const handleStatusToggle = (status: ApartmentStatus) => {
-    // Clicking an already-active status resets it back to 'all' (unsorted)
-    onStatusChange(apartment.id, apartment.status === status ? "all" : status);
+  const handleReactionToggle = (reaction: ReactionStatus) => {
+    // Clicking an already-active reaction removes it (sets to null)
+    onReactionChange(apartment.id, username, myReaction === reaction ? null : reaction);
   };
 
   const handlePrevImage = (e: React.MouseEvent) => {
@@ -151,15 +160,24 @@ export default function ApartmentCard({
         <div className="fixed inset-4 sm:inset-8 lg:inset-16 z-50 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-up">
           {/* Header */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <span
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${statusCfg.bgClass} ${statusCfg.textClass} ${statusCfg.borderClass}`}
-              >
-                {statusCfg.emoji} {statusCfg.label}
-              </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Dual reaction badges */}
+              <ReactionBadge name={username} reaction={myReaction} isMe />
+              <ReactionBadge name={partnerName} reaction={partnerReaction} />
+              {bothLiked && (
+                <span className="px-2.5 py-1 rounded-lg bg-green-100 text-green-700 text-xs font-semibold border border-green-200">
+                  ✨ Match!
+                </span>
+              )}
               {source && (
                 <span className="px-2.5 py-1 rounded-lg bg-brand-600/90 text-white text-xs font-semibold">
                   {source}
+                </span>
+              )}
+              {apartment.rooms && (
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-xs font-semibold border border-purple-200">
+                  <BedDouble className="w-3.5 h-3.5" />
+                  {apartment.rooms} rooms
                 </span>
               )}
             </div>
@@ -253,12 +271,18 @@ export default function ApartmentCard({
 
               {/* Details Panel */}
               <div className="lg:w-1/2 xl:w-2/5 p-4 sm:p-6 flex flex-col gap-5">
-                {/* Price */}
-                <div className="flex items-baseline gap-2">
+                {/* Price and Rooms */}
+                <div className="flex items-baseline gap-3 flex-wrap">
                   <span className="text-3xl font-bold text-slate-900">
                     ₪{formatPrice(apartment.price)}
                   </span>
                   <span className="text-slate-400 text-sm">/month</span>
+                  {apartment.rooms && (
+                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-sm font-semibold">
+                      <BedDouble className="w-4 h-4" />
+                      {apartment.rooms} rooms
+                    </span>
+                  )}
                 </div>
 
                 {/* Title/Address */}
@@ -305,19 +329,19 @@ export default function ApartmentCard({
                   </div>
                 )}
 
-                {/* Status Buttons */}
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</h3>
+                {/* Dual Reaction Selectors */}
+                <div className="flex flex-col gap-3">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Your Reaction</h3>
                   <div className="flex gap-2">
-                    {STATUS_ACTIONS.map(({ status, icon, label, activeClass }) => (
+                    {REACTION_ACTIONS.map(({ reaction, icon, label, activeClass }) => (
                       <button
-                        key={status}
-                        onClick={() => handleStatusToggle(status)}
+                        key={reaction}
+                        onClick={() => handleReactionToggle(reaction)}
                         className={`
                           flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium
                           transition-all duration-150 active:scale-95
                           ${
-                            apartment.status === status
+                            myReaction === reaction
                               ? activeClass
                               : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 bg-white"
                           }
@@ -327,6 +351,18 @@ export default function ApartmentCard({
                         <span className="hidden sm:inline">{label}</span>
                       </button>
                     ))}
+                  </div>
+                  
+                  {/* Partner's reaction display */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-slate-400">{partnerName}'s reaction:</span>
+                    {partnerReaction ? (
+                      <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${REACTION_CONFIG[partnerReaction].bgClass} ${REACTION_CONFIG[partnerReaction].textClass}`}>
+                        {REACTION_CONFIG[partnerReaction].emoji} {REACTION_CONFIG[partnerReaction].label}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">Not yet voted</span>
+                    )}
                   </div>
                 </div>
 
@@ -382,8 +418,7 @@ export default function ApartmentCard({
         group relative flex flex-col rounded-2xl bg-white overflow-hidden
         shadow-card hover:shadow-card-hover border
         transition-all duration-200 animate-fade-in
-        ${apartment.status === "rejected" ? "opacity-60 hover:opacity-100" : ""}
-        ${statusCfg.borderClass}
+        ${cardBorderClass}
       `}
     >
       {/* ── Hero Image ─────────────────────────────────────────────────────── */}
@@ -436,14 +471,20 @@ export default function ApartmentCard({
           </div>
         )}
 
-        {/* Status badge */}
-        <div className="absolute top-2 left-2">
-          <span
-            className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${statusCfg.bgClass} ${statusCfg.textClass} ${statusCfg.borderClass}`}
-          >
-            {statusCfg.emoji} {statusCfg.label}
-          </span>
+        {/* Dual reaction badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          <ReactionBadge name={username} reaction={myReaction} isMe compact />
+          <ReactionBadge name={partnerName} reaction={partnerReaction} compact />
         </div>
+
+        {/* Match indicator */}
+        {bothLiked && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <span className="px-3 py-1.5 rounded-full bg-green-500 text-white text-xs font-bold shadow-lg animate-pulse">
+              ✨ Match!
+            </span>
+          </div>
+        )}
 
         {/* Expand button on hover */}
         <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
@@ -458,11 +499,17 @@ export default function ApartmentCard({
       {/* ── Card Body ──────────────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 p-4 gap-3">
 
-        {/* Title / Address */}
-        <div>
-          <h2 className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug">
+        {/* Title / Address with Rooms badge */}
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug flex-1">
             {apartment.title}
           </h2>
+          {apartment.rooms && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-xs font-semibold flex-shrink-0">
+              <BedDouble className="w-3 h-3" />
+              {apartment.rooms}
+            </span>
+          )}
         </div>
 
         {/* Seller name and phone */}
@@ -499,19 +546,19 @@ export default function ApartmentCard({
         {/* ── Action Row ───────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
 
-          {/* Status toggle buttons */}
+          {/* Reaction toggle buttons */}
           <div className="flex items-center gap-1.5">
-            {STATUS_ACTIONS.map(({ status, icon, label, activeClass }) => (
+            {REACTION_ACTIONS.map(({ reaction, icon, label, activeClass }) => (
               <button
-                key={status}
-                onClick={() => handleStatusToggle(status)}
+                key={reaction}
+                onClick={() => handleReactionToggle(reaction)}
                 aria-label={label}
                 title={label}
                 className={`
                   flex items-center justify-center w-8 h-8 rounded-lg border text-sm
                   transition-all duration-150 active:scale-90
                   ${
-                    apartment.status === status
+                    myReaction === reaction
                       ? activeClass
                       : "border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 bg-white"
                   }
@@ -558,5 +605,42 @@ export default function ApartmentCard({
         </div>
       </div>
     </article>
+  );
+}
+
+// ── Helper Components ─────────────────────────────────────────────────────────
+
+interface ReactionBadgeProps {
+  name: string;
+  reaction: ReactionStatus | null;
+  isMe?: boolean;
+  compact?: boolean;
+}
+
+function ReactionBadge({ name, reaction, isMe, compact }: ReactionBadgeProps) {
+  if (!reaction) {
+    // No reaction yet
+    return compact ? null : (
+      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-xs font-medium border border-slate-200">
+        {isMe ? "You" : name}: 🏠
+      </span>
+    );
+  }
+
+  const cfg = REACTION_CONFIG[reaction];
+  const displayName = isMe ? "You" : name.charAt(0).toUpperCase();
+
+  if (compact) {
+    return (
+      <span className={`px-1.5 py-0.5 rounded text-xs font-semibold ${cfg.bgClass} ${cfg.textClass} ${cfg.borderClass} border`}>
+        {displayName}: {cfg.emoji}
+      </span>
+    );
+  }
+
+  return (
+    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${cfg.bgClass} ${cfg.textClass} ${cfg.borderClass}`}>
+      {isMe ? "You" : name}: {cfg.emoji} {cfg.label}
+    </span>
   );
 }

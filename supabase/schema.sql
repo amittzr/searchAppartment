@@ -1,5 +1,5 @@
 -- ============================================================
--- Apartment Tracker — Supabase PostgreSQL Schema
+-- Apartment Tracker — Supabase PostgreSQL Schema (v1.2)
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ============================================================
 
@@ -10,26 +10,30 @@ create extension if not exists "uuid-ossp";
 -- Table: apartments
 -- ============================================================
 create table if not exists public.apartments (
-  id          uuid primary key default uuid_generate_v4(),
-  url         text,                          -- link to original ad (Yad2 / Facebook)
-  title       text not null,                 -- apartment title or address
-  price       integer not null default 0,    -- monthly rent in local currency (used for sorting)
-  phone       text,                          -- landlord / agent phone number
-  seller_name text,                          -- name of the seller/landlord
-  image_url   text,                          -- hero image for the card
-  images      jsonb,                         -- array of all image URLs for gallery view
-  status      text not null default 'all'    -- reaction: 'all' | 'liked' | 'review' | 'rejected'
-                check (status in ('all', 'liked', 'review', 'rejected')),
-  notes       text,                          -- shared notes visible to both partners
-  created_at  timestamptz not null default now()
+  id           uuid primary key default uuid_generate_v4(),
+  household_id text not null default 'default-family',  -- v1.2: multi-household isolation
+  url          text,                          -- link to original ad (Yad2 / Facebook)
+  title        text not null,                 -- apartment title or address
+  price        integer not null default 0,    -- monthly rent in local currency (used for sorting)
+  rooms        text,                          -- v1.2: number of rooms (e.g., "3", "3.5", "4+")
+  phone        text,                          -- landlord / agent phone number
+  seller_name  text,                          -- name of the seller/landlord
+  image_url    text,                          -- hero image for the card
+  images       jsonb,                         -- array of all image URLs for gallery view
+  reactions    jsonb default '{}',            -- v1.2: per-user reactions {"username": "liked"|"review"|"rejected"}
+  status       text not null default 'all'    -- DEPRECATED: kept for backward compat, use reactions instead
+                 check (status in ('all', 'liked', 'review', 'rejected')),
+  notes        text,                          -- shared notes visible to both partners
+  created_at   timestamptz not null default now()
 );
 
 -- ============================================================
--- Migration: Add new columns if table already exists
--- Run these if upgrading an existing installation
+-- Migration v1.2: Add new columns if table already exists
+-- Run these ALTER statements if upgrading from v1.0/v1.1
 -- ============================================================
--- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS seller_name text;
--- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS images jsonb;
+-- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS household_id text NOT NULL DEFAULT 'default-family';
+-- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS rooms text;
+-- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS reactions jsonb DEFAULT '{}';
 
 -- ============================================================
 -- Row Level Security (RLS)
@@ -49,9 +53,11 @@ create policy "Allow full public access"
 -- ============================================================
 -- Indexes for common query patterns
 -- ============================================================
-create index if not exists idx_apartments_status     on public.apartments (status);
-create index if not exists idx_apartments_created_at on public.apartments (created_at desc);
-create index if not exists idx_apartments_price      on public.apartments (price asc);
+create index if not exists idx_apartments_status       on public.apartments (status);
+create index if not exists idx_apartments_created_at   on public.apartments (created_at desc);
+create index if not exists idx_apartments_price        on public.apartments (price asc);
+create index if not exists idx_apartments_household_id on public.apartments (household_id);   -- v1.2
+create index if not exists idx_apartments_rooms        on public.apartments (rooms);          -- v1.2
 
 -- ============================================================
 -- Enable real-time replication for the apartments table

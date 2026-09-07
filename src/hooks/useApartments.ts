@@ -7,75 +7,114 @@ import type {
   ApartmentInsert,
   ApartmentUpdate,
   ApartmentStatus,
+  ReactionStatus,
+  ReactionsMap,
 } from "@/types/database";
 
 interface UseApartmentsReturn {
   apartments: Apartment[];
   loading: boolean;
   error: string | null;
-  addApartment: (data: ApartmentInsert) => Promise<{ error: string | null }>;
+  addApartment: (data: Omit<ApartmentInsert, "household_id">) => Promise<{ error: string | null }>;
   updateApartment: (id: string, data: ApartmentUpdate) => Promise<{ error: string | null }>;
   deleteApartment: (id: string) => Promise<{ error: string | null }>;
   setStatus: (id: string, status: ApartmentStatus) => Promise<{ error: string | null }>;
+  setReaction: (id: string, username: string, reaction: ReactionStatus | null) => Promise<{ error: string | null }>;
   refetch: () => Promise<void>;
 }
 
-export function useApartments(): UseApartmentsReturn {
+interface UseApartmentsOptions {
+  householdId: string;
+}
+
+export function useApartments({ householdId }: UseApartmentsOptions): UseApartmentsReturn {
   const [apartments, setApartments] = useState<Apartment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Fetch all apartments ordered newest first ───────────────────────────────
+  // ── Fetch apartments scoped to household ────────────────────────────────────
   const fetchApartments = useCallback(async () => {
+    if (!householdId) {
+      setApartments([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     const { data, error: fetchError } = await supabase
       .from("apartments")
       .select("*")
+      .eq("household_id", householdId)
       .order("created_at", { ascending: false });
 
     if (fetchError) {
       setError(fetchError.message);
     } else {
-      // Cast to Apartment[] — shape is guaranteed by the DB schema
-      setApartments((data as Apartment[]) ?? []);
+      // Ensure reactions field defaults to empty object if null
+      const normalized = (data ?? []).map((apt) => ({
+        ...apt,
+        reactions: apt.reactions ?? {},
+      })) as Apartment[];
+      setApartments(normalized);
     }
 
     setLoading(false);
-  }, []);
+  }, [householdId]);
 
-  // ── Real-time subscription ──────────────────────────────────────────────────
-  // Listens for INSERT / UPDATE / DELETE on the apartments table so both
-  // partners see changes instantly without a manual refresh.
+  // ── Real-time subscription scoped to household ──────────────────────────────
   useEffect(() => {
     fetchApartments();
 
+    if (!householdId) return;
+
     const channel = supabase
-      .channel("apartments-realtime")
+      .channel(`apartments-${householdId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "apartments" },
+        { 
+          event: "INSERT", 
+          schema: "public", 
+          table: "apartments",
+          filter: `household_id=eq.${householdId}`
+        },
         (payload) => {
-          setApartments((prev) => [payload.new as Apartment, ...prev]);
+          const newApt = {
+            ...payload.new,
+            reactions: (payload.new as Apartment).reactions ?? {},
+          } as Apartment;
+          setApartments((prev) => [newApt, ...prev]);
         }
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "apartments" },
+        { 
+          event: "UPDATE", 
+          schema: "public", 
+          table: "apartments",
+          filter: `household_id=eq.${householdId}`
+        },
         (payload) => {
+          const updatedApt = {
+            ...payload.new,
+            reactions: (payload.new as Apartment).reactions ?? {},
+          } as Apartment;
           setApartments((prev) =>
             prev.map((apt) =>
-              apt.id === (payload.new as Apartment).id
-                ? (payload.new as Apartment)
-                : apt
+              apt.id === updatedApt.id ? updatedApt : apt
             )
           );
         }
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "apartments" },
+        { 
+          event: "DELETE", 
+          schema: "public", 
+          table: "apartments",
+          filter: `household_id=eq.${householdId}`
+        },
         (payload) => {
           setApartments((prev) =>
             prev.filter((apt) => apt.id !== (payload.old as Apartment).id)
@@ -87,20 +126,25 @@ export function useApartments(): UseApartmentsReturn {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchApartments]);
+  }, [fetchApartments, householdId]);
 
-  // ── Create ──────────────────────────────────────────────────────────────────
+  // ── Create (auto-attach household_id) ───────────────────────────────────────
   const addApartment = useCallback(
-    async (data: ApartmentInsert): Promise<{ error: string | null }> => {
-      // Cast to `object` first to bypass the untyped client's `never` inference
+    async (data: Omit<ApartmentInsert, "household_id">): Promise<{ error: string | null }> => {
+      const insertData: ApartmentInsert = {
+        ...data,
+        household_id: householdId,
+        reactions: data.reactions ?? {},
+      };
+
       const { error: insertError } = await supabase
         .from("apartments")
-        .insert(data as object);
+        .insert(insertData as object);
 
       if (insertError) return { error: insertError.message };
       return { error: null };
     },
-    []
+    [householdId]
   );
 
   // ── Update ──────────────────────────────────────────────────────────────────
@@ -109,12 +153,13 @@ export function useApartments(): UseApartmentsReturn {
       const { error: updateError } = await supabase
         .from("apartments")
         .update(data as object)
-        .eq("id", id);
+        .eq("id", id)
+        .eq("household_id", householdId); // Security: ensure ownership
 
       if (updateError) return { error: updateError.message };
       return { error: null };
     },
-    []
+    [householdId]
   );
 
   // ── Delete ──────────────────────────────────────────────────────────────────
@@ -123,20 +168,50 @@ export function useApartments(): UseApartmentsReturn {
       const { error: deleteError } = await supabase
         .from("apartments")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("household_id", householdId); // Security: ensure ownership
 
       if (deleteError) return { error: deleteError.message };
       return { error: null };
     },
-    []
+    [householdId]
   );
 
-  // ── Quick status toggle ─────────────────────────────────────────────────────
+  // ── Legacy status toggle (kept for backward compatibility) ──────────────────
   const setStatus = useCallback(
     async (id: string, status: ApartmentStatus): Promise<{ error: string | null }> => {
       return updateApartment(id, { status });
     },
     [updateApartment]
+  );
+
+  // ── Set per-user reaction ───────────────────────────────────────────────────
+  // Updates a single user's reaction without overwriting partner's reaction
+  const setReaction = useCallback(
+    async (
+      id: string,
+      username: string,
+      reaction: ReactionStatus | null
+    ): Promise<{ error: string | null }> => {
+      // First, get the current reactions
+      const apartment = apartments.find((apt) => apt.id === id);
+      if (!apartment) {
+        return { error: "Apartment not found" };
+      }
+
+      // Build new reactions object
+      const newReactions: ReactionsMap = { ...apartment.reactions };
+      if (reaction === null) {
+        // Remove the user's reaction
+        delete newReactions[username];
+      } else {
+        // Set/update the user's reaction
+        newReactions[username] = reaction;
+      }
+
+      return updateApartment(id, { reactions: newReactions });
+    },
+    [apartments, updateApartment]
   );
 
   return {
@@ -147,6 +222,7 @@ export function useApartments(): UseApartmentsReturn {
     updateApartment,
     deleteApartment,
     setStatus,
+    setReaction,
     refetch: fetchApartments,
   };
 }

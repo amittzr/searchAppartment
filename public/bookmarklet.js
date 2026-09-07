@@ -37,6 +37,7 @@
       url: window.location.href,
       title: '',
       price: '',
+      rooms: '',
       phone: '',
       seller_name: '',
       image_url: '',
@@ -57,6 +58,12 @@
     // Price
     if (itemData.price) {
       data.price = String(itemData.price).replace(/[^\d]/g, '');
+    }
+
+    // Rooms - extract from additionalDetails
+    const roomsCount = itemData.additionalDetails?.roomsCount ?? itemData.additionalDetails?.rooms ?? itemData.rooms;
+    if (roomsCount) {
+      data.rooms = String(roomsCount);
     }
 
     // Seller name from customer
@@ -101,6 +108,7 @@
     params.set('url', data.url);
     if (data.title) params.set('title', data.title);
     if (data.price) params.set('price', data.price);
+    if (data.rooms) params.set('rooms', data.rooms);
     if (data.phone) params.set('phone', data.phone);
     if (data.seller_name) params.set('seller_name', data.seller_name);
     if (data.image_url) params.set('image_url', data.image_url);

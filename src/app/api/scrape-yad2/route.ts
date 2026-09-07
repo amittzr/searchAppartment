@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 export interface ScrapeResult {
   title: string;
   price: string;
+  rooms: string;
   phone: string;
   seller_name: string;
   image_url: string;
@@ -157,6 +158,18 @@ function parseApiResponse(data: any): Partial<ScrapeResult> {
   if (rawPrice != null) {
     const numeric = String(rawPrice).replace(/[^\d]/g, "");
     if (numeric) result.price = numeric;
+  }
+
+  // ── Rooms ──────────────────────────────────────────────────────────────
+  const rawRooms =
+    item.additionalDetails?.roomsCount    ??
+    item.additionalDetails?.rooms         ??
+    item.rooms                            ??
+    item.roomsCount                       ??
+    null;
+  if (rawRooms != null) {
+    result.rooms = String(rawRooms);
+    console.log(`[scrape-yad2] Extracted rooms: ${result.rooms}`);
   }
 
   // ── Address / title ────────────────────────────────────────────────────
@@ -312,6 +325,7 @@ export async function POST(
             {
               title:       result.title       ?? "",
               price:       result.price       ?? "",
+              rooms:       result.rooms       ?? "",
               phone:       phone,
               seller_name: sellerName,
               image_url:   result.image_url   ?? "",
@@ -451,6 +465,7 @@ export async function POST(
           {
             title:       result.title       ?? "",
             price:       result.price       ?? "",
+            rooms:       result.rooms       ?? "",
             phone:       phone,
             seller_name: sellerName,
             image_url:   result.image_url   ?? "",
@@ -517,6 +532,7 @@ export async function POST(
         {
           title:       scraped.title       ?? "",
           price:       scraped.price       ?? "",
+          rooms:       scraped.rooms       ?? "",
           phone:       scraped.phone       ?? "",
           seller_name: scraped.seller_name ?? "",
           image_url:   scraped.image_url   ?? "",

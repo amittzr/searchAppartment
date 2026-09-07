@@ -14,6 +14,7 @@ import {
   Wand2,
   CheckCircle2,
   User,
+  BedDouble,
 } from "lucide-react";
 import type { Apartment, ApartmentFormData, ApartmentStatus } from "@/types/database";
 import { useYad2AutoFill } from "@/hooks/useYad2AutoFill";
@@ -35,6 +36,7 @@ const EMPTY_FORM: ApartmentFormData = {
   url: "",
   title: "",
   price: "",
+  rooms: "",
   phone: "",
   seller_name: "",
   image_url: "",
@@ -79,6 +81,7 @@ export default function ApartmentModal({
         url:         editingApartment.url         ?? "",
         title:       editingApartment.title,
         price:       String(editingApartment.price),
+        rooms:       editingApartment.rooms       ?? "",
         phone:       editingApartment.phone       ?? "",
         seller_name: editingApartment.seller_name ?? "",
         image_url:   editingApartment.image_url   ?? "",
@@ -93,6 +96,7 @@ export default function ApartmentModal({
         url:         initialData.url         ?? "",
         title:       initialData.title       ?? "",
         price:       initialData.price       ?? "",
+        rooms:       initialData.rooms       ?? "",
         phone:       initialData.phone       ?? "",
         seller_name: initialData.seller_name ?? "",
         image_url:   initialData.image_url   ?? "",
@@ -157,6 +161,7 @@ export default function ApartmentModal({
       ...prev,
       title:       scraped.title       || prev.title,
       price:       scraped.price       || prev.price,
+      rooms:       scraped.rooms       || prev.rooms,
       phone:       scraped.phone       || prev.phone,
       seller_name: scraped.seller_name || prev.seller_name,
       image_url:   scraped.image_url   || prev.image_url,
@@ -377,6 +382,23 @@ export default function ApartmentModal({
                 onChange={(e) => setField("price", e.target.value)}
                 placeholder="6500"
                 className={inputClass(!!errors.price)}
+              />
+            </Field>
+
+            {/* ── Rooms ────────────────────────────────────────────────── */}
+            <Field
+              label="Rooms"
+              icon={<BedDouble className="w-4 h-4" />}
+              error={errors.rooms}
+              hint="e.g., 3 or 3.5"
+            >
+              <input
+                type="text"
+                value={form.rooms}
+                onChange={(e) => setField("rooms", e.target.value)}
+                placeholder="3"
+                className={inputClass(!!errors.rooms)}
+                autoComplete="off"
               />
             </Field>
 
