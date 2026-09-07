@@ -3,453 +3,172 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ApartmentTracker — Project Tracker</title>
+  <title>ApartmentTracker — Project Tracker v1.3</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f8fafc;
-      color: #0f172a;
-      line-height: 1.6;
-      padding: 2rem 1rem;
-    }
-
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.6; padding: 2rem 1rem; }
     .container { max-width: 960px; margin: 0 auto; }
-
-    /* ── Header ── */
-    .header {
-      background: linear-gradient(135deg, #0ea5e9, #0369a1);
-      color: white;
-      border-radius: 16px;
-      padding: 2rem;
-      margin-bottom: 2rem;
-    }
+    .header { background: linear-gradient(135deg, #0ea5e9, #0369a1); color: white; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; }
     .header h1 { font-size: 1.75rem; font-weight: 800; }
-    .header p  { opacity: 0.85; margin-top: 0.25rem; font-size: 0.95rem; }
-    .header-meta {
-      display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;
-    }
-    .badge {
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.3);
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    /* ── Section ── */
+    .header p { opacity: 0.85; margin-top: 0.25rem; font-size: 0.95rem; }
+    .header-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+    .badge { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
     .section { margin-bottom: 2rem; }
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #1e293b;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid #e2e8f0;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    /* ── Cards grid ── */
+    .section-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-    .card {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 1.25rem;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
     .card-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; }
-    .card-sub   { font-size: 0.8rem; color: #64748b; }
-
-    /* ── Status pills ── */
-    .pill {
-      display: inline-block;
-      padding: 0.2rem 0.65rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    .pill-green  { background: #dcfce7; color: #16a34a; }
-    .pill-blue   { background: #dbeafe; color: #1d4ed8; }
-    .pill-amber  { background: #fef9c3; color: #a16207; }
-    .pill-slate  { background: #f1f5f9; color: #475569; }
-    .pill-red    { background: #fee2e2; color: #dc2626; }
-
-    /* ── Tech stack table ── */
+    .card-sub { font-size: 0.8rem; color: #64748b; }
+    .pill { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .pill-green { background: #dcfce7; color: #16a34a; }
+    .pill-blue { background: #dbeafe; color: #1d4ed8; }
+    .pill-pink { background: #fce7f3; color: #db2777; }
     table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
-    th { background: #f8fafc; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem 1rem; text-align: left; }
+    th { background: #f8fafc; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; padding: 0.75rem 1rem; text-align: left; }
     td { padding: 0.75rem 1rem; font-size: 0.9rem; border-top: 1px solid #f1f5f9; }
-    tr:hover td { background: #f8fafc; }
-
-    /* ── Feature checklist ── */
     .checklist { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
-    .checklist li {
-      display: flex; align-items: flex-start; gap: 0.6rem;
-      font-size: 0.9rem; padding: 0.6rem 0.75rem;
-      background: white; border-radius: 8px;
-      border: 1px solid #e2e8f0;
-    }
-    .checklist li .icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.05rem; }
-    .done   { border-left: 3px solid #22c55e; }
-    .todo   { border-left: 3px solid #cbd5e1; }
-    .todo .label { color: #94a3b8; }
-
-    /* ── Roadmap ── */
-    .roadmap-group { margin-bottom: 1.5rem; }
-    .roadmap-version {
-      font-size: 0.85rem; font-weight: 700; color: #0ea5e9;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 0.5rem;
-    }
-    .roadmap-items { display: flex; flex-direction: column; gap: 0.35rem; }
-    .roadmap-item {
-      display: flex; align-items: center; gap: 0.6rem;
-      font-size: 0.875rem; padding: 0.5rem 0.75rem;
-      background: white; border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .roadmap-item:hover { background: #f0f9ff; }
-    .roadmap-item input[type=checkbox] { accent-color: #0ea5e9; width: 15px; height: 15px; cursor: pointer; }
-    .roadmap-item.checked { text-decoration: line-through; color: #94a3b8; background: #f8fafc; }
-
-    /* ── File tree ── */
-    .filetree {
-      background: #1e293b; color: #e2e8f0; border-radius: 12px;
-      padding: 1.25rem 1.5rem; font-family: "Fira Code", "Cascadia Code", monospace;
-      font-size: 0.82rem; line-height: 1.8; overflow-x: auto;
-    }
-    .filetree .dir  { color: #7dd3fc; font-weight: 600; }
-    .filetree .file { color: #94a3b8; }
-    .filetree .note { color: #475569; }
-
-    /* ── Env table ── */
-    .env-table td:first-child { font-family: monospace; font-size: 0.8rem; color: #0ea5e9; }
-
-    /* ── Footer ── */
+    .checklist li { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.9rem; padding: 0.6rem 0.75rem; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .done { border-left: 3px solid #22c55e; }
     .footer { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
-
-    /* ── Links ── */
     a { color: #0ea5e9; text-decoration: none; }
     a:hover { text-decoration: underline; }
-
-    @media (max-width: 600px) {
-      .grid { grid-template-columns: 1fr; }
-      .header-meta { flex-direction: column; }
-    }
+    code { background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85rem; }
   </style>
 </head>
 <body>
 <div class="container">
 
-  <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <div class="header">
     <h1>🏠 ApartmentTracker</h1>
     <p>Private real-time rental apartment tracker for couples — built with Next.js + Supabase</p>
     <div class="header-meta">
-      <span class="badge">✅ Live in Production</span>
-      <span class="badge">v1.1</span>
+      <span class="badge">✅ Live</span>
+      <span class="badge">v1.3</span>
       <span class="badge">Next.js 15.5</span>
-      <span class="badge">Supabase PostgreSQL</span>
-      <span class="badge">Vercel</span>
+      <span class="badge">Supabase</span>
+      <span class="badge">Leaflet Maps</span>
       <span class="badge">September 2026</span>
     </div>
   </div>
 
-  <!-- ── Quick Links ─────────────────────────────────────────────────────── -->
   <div class="section">
     <div class="section-title">🔗 Quick Links</div>
     <div class="grid">
-      <div class="card">
-        <div class="card-title">🌐 Production App</div>
-        <div class="card-sub"><a href="https://search-appartment.vercel.app" target="_blank">search-appartment.vercel.app</a></div>
-      </div>
-      <div class="card">
-        <div class="card-title">📦 GitHub Repository</div>
-        <div class="card-sub"><a href="https://github.com/amittzr/searchAppartment" target="_blank">github.com/amittzr/searchAppartment</a></div>
-      </div>
-      <div class="card">
-        <div class="card-title">🗄️ Supabase Dashboard</div>
-        <div class="card-sub"><a href="https://supabase.com/dashboard/project/khozzonoqctwbzsowulv" target="_blank">khozzonoqctwbzsowulv — ap-southeast-1</a></div>
-      </div>
-      <div class="card">
-        <div class="card-title">⚡ Vercel Dashboard</div>
-        <div class="card-sub"><a href="https://vercel.com/dashboard" target="_blank">vercel.com/dashboard</a></div>
-      </div>
+      <div class="card"><div class="card-title">🌐 Production</div><div class="card-sub"><a href="https://search-appartment.vercel.app" target="_blank">search-appartment.vercel.app</a></div></div>
+      <div class="card"><div class="card-title">📦 GitHub</div><div class="card-sub"><a href="https://github.com/amittzr/searchAppartment" target="_blank">github.com/amittzr/searchAppartment</a></div></div>
+      <div class="card"><div class="card-title">🗄️ Supabase</div><div class="card-sub"><a href="https://supabase.com/dashboard/project/khozzonoqctwbzsowulv" target="_blank">khozzonoqctwbzsowulv</a></div></div>
+      <div class="card"><div class="card-title">⚡ Vercel</div><div class="card-sub"><a href="https://vercel.com/dashboard" target="_blank">vercel.com/dashboard</a></div></div>
     </div>
   </div>
 
-  <!-- ── Tech Stack ──────────────────────────────────────────────────────── -->
   <div class="section">
     <div class="section-title">🛠️ Tech Stack</div>
     <table>
-      <thead>
-        <tr><th>Layer</th><th>Technology</th><th>Version</th><th>Status</th></tr>
-      </thead>
+      <thead><tr><th>Layer</th><th>Technology</th><th>Version</th></tr></thead>
       <tbody>
-        <tr><td>Framework</td><td>Next.js (App Router)</td><td>15.5.25</td><td><span class="pill pill-green">Active</span></td></tr>
-        <tr><td>Language</td><td>TypeScript</td><td>^5</td><td><span class="pill pill-green">Active</span></td></tr>
-        <tr><td>Styling</td><td>Tailwind CSS</td><td>^3.4.1</td><td><span class="pill pill-green">Active</span></td></tr>
-        <tr><td>Icons</td><td>lucide-react</td><td>^0.460.0</td><td><span class="pill pill-green">Active</span></td></tr>
-        <tr><td>Database</td><td>Supabase (PostgreSQL)</td><td>^2.45.4</td><td><span class="pill pill-green">Active</span></td></tr>
-        <tr><td>Realtime</td><td>Supabase Realtime</td><td>built-in</td><td><span class="pill pill-green">Active</span></td></tr>
-        <tr><td>Deployment</td><td>Vercel</td><td>CLI 59.11</td><td><span class="pill pill-green">Active</span></td></tr>
-        <tr><td>Auth</td><td>Shared password + httpOnly cookie</td><td>custom</td><td><span class="pill pill-blue">Lightweight</span></td></tr>
+        <tr><td>Framework</td><td>Next.js (App Router)</td><td>15.5.25</td></tr>
+        <tr><td>Language</td><td>TypeScript</td><td>^5</td></tr>
+        <tr><td>Styling</td><td>Tailwind CSS</td><td>^3.4.1</td></tr>
+        <tr><td>Database</td><td>Supabase (PostgreSQL)</td><td>^2.45.4</td></tr>
+        <tr><td>Maps</td><td>Leaflet (CDN)</td><td>1.9.4</td></tr>
+        <tr><td>Geocoding</td><td>Nominatim (OpenStreetMap)</td><td>Free API</td></tr>
+        <tr><td>Deployment</td><td>Vercel</td><td>—</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- ── File Structure ─────────────────────────────────────────────────── -->
   <div class="section">
-    <div class="section-title">📁 File Structure</div>
-    <div class="filetree">
-<span class="dir">searchAppartment/</span>
-├── <span class="file">.env.local</span>              <span class="note"># Supabase keys + APP_PASSWORD (never commit)</span>
-├── <span class="file">next.config.ts</span>          <span class="note"># Image remotePatterns, ignoreDuringBuilds</span>
-├── <span class="file">tailwind.config.ts</span>      <span class="note"># Brand colors, card shadows, shimmer animation</span>
-├── <span class="file">supabase/schema.sql</span>     <span class="note"># Run once in Supabase SQL Editor</span>
-├── <span class="dir">src/app/</span>
-│   ├── <span class="file">page.tsx</span>             <span class="note"># Dashboard: filter, grid, modals, delete confirm</span>
-│   ├── <span class="file">layout.tsx</span>           <span class="note"># Root layout, metadata, Inter font</span>
-│   ├── <span class="file">globals.css</span>          <span class="note"># Tailwind base + shimmer + scrollbar</span>
-│   ├── <span class="dir">login/page.tsx</span>       <span class="note"># Password gate with show/hide + ?from= redirect</span>
-│   └── <span class="dir">api/</span>
-│       ├── <span class="dir">auth/</span>
-│       │   ├── <span class="file">login/route.ts</span>   <span class="note"># POST: validate password → set apt_session cookie</span>
-│       │   └── <span class="file">logout/route.ts</span>  <span class="note"># POST: expire cookie → redirect /login</span>
-│       └── <span class="file">scrape-yad2/route.ts</span> <span class="note"># POST: Yad2 auto-fill scraper API</span>
-├── <span class="dir">src/components/</span>
-│   ├── <span class="file">Navbar.tsx</span>           <span class="note"># Logo, refresh, logout, Add button</span>
-│   ├── <span class="file">FilterTabs.tsx</span>       <span class="note"># All / Liked / Review / Rejected with live counts</span>
-│   ├── <span class="file">ApartmentCard.tsx</span>    <span class="note"># Card + expandable gallery view</span>
-│   ├── <span class="file">ApartmentModal.tsx</span>   <span class="note"># Add/Edit form with Yad2 auto-fill</span>
-│   └── <span class="file">LoadingSkeleton.tsx</span>  <span class="note"># Shimmer placeholder grid</span>
-├── <span class="dir">src/hooks/</span>
-│   ├── <span class="file">useApartments.ts</span>     <span class="note"># CRUD + Supabase Realtime subscription</span>
-│   └── <span class="file">useYad2AutoFill.ts</span>   <span class="note"># Auto-fill hook for Yad2 URLs</span>
-├── <span class="dir">src/lib/</span>
-│   └── <span class="file">supabase.ts</span>          <span class="note"># Singleton Supabase client (untyped)</span>
-├── <span class="dir">src/types/</span>
-│   └── <span class="file">database.ts</span>          <span class="note"># Apartment, ApartmentInsert, ApartmentFormData...</span>
-└── <span class="file">src/middleware.ts</span>        <span class="note"># Edge auth guard — checks apt_session cookie</span>
-    </div>
-  </div>
-
-  <!-- ── Environment Variables ──────────────────────────────────────────── -->
-  <div class="section">
-    <div class="section-title">🔐 Environment Variables</div>
-    <table class="env-table">
-      <thead>
-        <tr><th>Variable</th><th>Where</th><th>Purpose</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>NEXT_PUBLIC_SUPABASE_URL</td><td>Vercel + .env.local</td><td>Supabase project base URL (no trailing path)</td></tr>
-        <tr><td>NEXT_PUBLIC_SUPABASE_ANON_KEY</td><td>Vercel + .env.local</td><td>Supabase anon/public JWT key</td></tr>
-        <tr><td>APP_PASSWORD</td><td>Vercel + .env.local</td><td>Shared login password for both partners</td></tr>
-        <tr><td>YAD2_COOKIES</td><td>.env.local only</td><td>Browser cookies for Yad2 auto-fill (refresh monthly)</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ── Features ───────────────────────────────────────────────────────── -->
-  <div class="section">
-    <div class="section-title">✅ Features Implemented</div>
+    <div class="section-title">✅ Features v1.0-v1.1 (Core)</div>
     <ul class="checklist">
-      <li class="done"><span class="icon">✅</span><span class="label">Add apartment — modal form with field validation</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Edit apartment — pre-filled modal</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Delete apartment — 2-step confirmation dialog</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Status reactions: Liked ❤️ / Review Later 🤔 / Rejected ❌ (toggle, click again to reset)</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Filter tabs with live counts: All / Liked / Review / Rejected</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Real-time sync via Supabase Realtime — instant updates for both users</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Auto-detect listing source: Yad2 / Facebook from URL</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Direct link to original ad (opens in new tab)</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Phone number click-to-call</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Seller/contact name display on cards</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Shared notes per apartment</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Responsive mobile-first design</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Loading skeleton (shimmer cards)</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Empty state (per-filter + global)</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Error handling with dismissible banners</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Shared password authentication (httpOnly cookie, 7-day session)</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Logout button in navbar</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">?from= redirect after login</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">CI/CD — push to main → auto-deploy on Vercel</span></li>
+      <li class="done"><span>✅</span> Add/Edit/Delete apartments with modal forms</li>
+      <li class="done"><span>✅</span> Real-time sync via Supabase Realtime</li>
+      <li class="done"><span>✅</span> Yad2 auto-fill — paste URL to extract all data</li>
+      <li class="done"><span>✅</span> Bookmarklet for one-click save from Yad2</li>
+      <li class="done"><span>✅</span> Expandable card with photo gallery</li>
+      <li class="done"><span>✅</span> Phone click-to-call + seller name display</li>
+      <li class="done"><span>✅</span> Password authentication with httpOnly cookies</li>
     </ul>
   </div>
 
-  <!-- ── Yad2 Auto-Fill ─────────────────────────────────────────────────── -->
   <div class="section">
-    <div class="section-title">🪄 Yad2 Auto-Fill (v1.1)</div>
+    <div class="section-title">💕 Features v1.2 (Multi-Household & Reactions)</div>
     <ul class="checklist">
-      <li class="done"><span class="icon">✅</span><span class="label">Paste Yad2 URL → Auto-Fill button extracts listing data</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Extracts: title/address, price, phone, seller name, all images</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Server-side scraping with cookie authentication</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Bypasses Radware bot protection via session cookies</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Customer API integration for phone number retrieval</span></li>
+      <li class="done"><span>✅</span> <code>household_id</code> field for multi-tenant isolation</li>
+      <li class="done"><span>✅</span> HouseholdContext with localStorage persistence</li>
+      <li class="done"><span>✅</span> HouseholdSettingsModal for configuring names</li>
+      <li class="done"><span>✅</span> Per-user reactions — each partner marks independently</li>
+      <li class="done"><span>✅</span> Dual reaction badges on cards (both partners' status)</li>
+      <li class="done"><span>✅</span> Match indicator 💕 when both partners like same apartment</li>
+      <li class="done"><span>✅</span> <code>rooms</code> field extracted from Yad2</li>
+      <li class="done"><span>✅</span> FilterToolbar: search, rooms filter, sort, reaction pills</li>
+      <li class="done"><span>✅</span> Reaction filters: All, Both Liked, I Liked, Partner Liked, Review, Rejected, Unsorted</li>
     </ul>
   </div>
 
-  <!-- ── Expandable Card ────────────────────────────────────────────────── -->
   <div class="section">
-    <div class="section-title">🖼️ Expandable Card View (v1.1)</div>
+    <div class="section-title">🗺️ Features v1.3 (Interactive Map)</div>
     <ul class="checklist">
-      <li class="done"><span class="icon">✅</span><span class="label">Click apartment image to expand into full-screen overlay</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Photo gallery with left/right navigation arrows</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Thumbnail strip for quick image selection (desktop)</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Image counter (e.g., "2 / 4")</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Contact section showing seller name + clickable phone</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Full notes display in expanded view</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Status toggle buttons in expanded view</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Edit/Delete/Open Original actions</span></li>
-      <li class="done"><span class="icon">✅</span><span class="label">Image count badge on cards with multiple photos</span></li>
+      <li class="done"><span>✅</span> Map button in header to open full-screen map view</li>
+      <li class="done"><span>✅</span> Leaflet map loaded from CDN (no npm dependency)</li>
+      <li class="done"><span>✅</span> OpenStreetMap tiles (free, no API key)</li>
+      <li class="done"><span>✅</span> Auto-geocoding addresses using Nominatim API</li>
+      <li class="done"><span>✅</span> <code>latitude</code>/<code>longitude</code> stored in database</li>
+      <li class="done"><span>✅</span> Color-coded markers: <span class="pill pill-pink">Pink</span> Both liked, <span class="pill pill-green">Red</span> Liked, <span class="pill pill-blue">Blue</span> No reaction, Gray = Rejected</li>
+      <li class="done"><span>✅</span> Hover tooltips showing address and price</li>
+      <li class="done"><span>✅</span> Click marker → mini apartment card with image, price, actions</li>
+      <li class="done"><span>✅</span> Legend explaining marker colors</li>
     </ul>
   </div>
 
-  <!-- ── Roadmap ─────────────────────────────────────────────────────────── -->
   <div class="section">
-    <div class="section-title">🗺️ Upgrade Roadmap</div>
-    <p style="font-size:0.85rem;color:#64748b;margin-bottom:1rem;">Check items off as you complete them — state is saved in your browser.</p>
-
-    <div class="roadmap-group">
-      <div class="roadmap-version">v1.2 — Quick Wins</div>
-      <div class="roadmap-items" id="v12">
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Sort by price (asc / desc toggle)</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Search / filter by title or address text</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Copy phone number to clipboard button</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Toast notifications instead of error banners</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Apartment count badge in page tab title</label>
-      </div>
-    </div>
-
-    <div class="roadmap-group">
-      <div class="roadmap-version">v1.3 — Content Improvements</div>
-      <div class="roadmap-items" id="v13">
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Map view — Google Maps pin from address</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> "Visited" checkbox — track toured apartments</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Visit date / appointment scheduler</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Star rating (1–5 ⭐) per apartment</label>
-      </div>
-    </div>
-
-    <div class="roadmap-group">
-      <div class="roadmap-version">v1.4 — Collaboration</div>
-      <div class="roadmap-items" id="v14">
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Comments thread per apartment (instead of single notes)</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> "Added by" indicator (Partner A vs Partner B) via Supabase Auth</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Push notifications when partner adds a new listing</label>
-      </div>
-    </div>
-
-    <div class="roadmap-group">
-      <div class="roadmap-version">v2.0 — Power Features</div>
-      <div class="roadmap-items" id="v20">
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Facebook Marketplace URL scraper</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Side-by-side comparison view (pick 2–3 apartments)</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Export list to PDF or Excel</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Custom tags / labels per apartment</label>
-        <label class="roadmap-item"><input type="checkbox" onchange="save(this)"> Price history tracking (log price changes on edit)</label>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Known Limitations ──────────────────────────────────────────────── -->
-  <div class="section">
-    <div class="section-title">⚠️ Known Limitations</div>
-    <ul class="checklist">
-      <li class="todo"><span class="icon">⚠️</span><span class="label">No per-user auth — both partners share one password and see identical data</span></li>
-      <li class="todo"><span class="icon">⚠️</span><span class="label">Image URLs are user-supplied — broken links show a placeholder icon</span></li>
-      <li class="todo"><span class="icon">⚠️</span><span class="label">No rate limiting beyond 500ms delay on wrong password attempts</span></li>
-      <li class="todo"><span class="icon">⚠️</span><span class="label">Supabase free tier pauses after 1 week of inactivity — resume from dashboard</span></li>
-    </ul>
-  </div>
-
-  <!-- ── Dev Commands ───────────────────────────────────────────────────── -->
-  <div class="section">
-    <div class="section-title">💻 Dev Commands</div>
+    <div class="section-title">🗄️ Database Schema</div>
     <table>
-      <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+      <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
       <tbody>
-        <tr><td><code>npm run dev</code></td><td>Start local dev server at http://localhost:3000</td></tr>
-        <tr><td><code>npm run build</code></td><td>Production build (TypeScript check + Next.js compile)</td></tr>
-        <tr><td><code>npm run start</code></td><td>Run production build locally</td></tr>
-        <tr><td><code>npm run lint</code></td><td>ESLint check</td></tr>
-        <tr><td><code>git push origin main</code></td><td>Deploy to Vercel (auto CI/CD)</td></tr>
+        <tr><td><code>id</code></td><td>uuid</td><td>Primary key</td></tr>
+        <tr><td><code>household_id</code></td><td>text</td><td>Multi-tenant key</td></tr>
+        <tr><td><code>title</code></td><td>text</td><td>Address/title</td></tr>
+        <tr><td><code>price</code></td><td>integer</td><td>Monthly rent ₪</td></tr>
+        <tr><td><code>rooms</code></td><td>text</td><td>Room count</td></tr>
+        <tr><td><code>reactions</code></td><td>jsonb</td><td>{"Amit": "liked"}</td></tr>
+        <tr><td><code>latitude</code></td><td>double</td><td>Map coordinate</td></tr>
+        <tr><td><code>longitude</code></td><td>double</td><td>Map coordinate</td></tr>
+        <tr><td><code>images</code></td><td>jsonb</td><td>Image URLs array</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- ── Change Log ─────────────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">📋 Migrations</div>
+    <p style="margin-bottom:1rem;font-size:0.9rem;color:#64748b;">Run these in Supabase SQL Editor if upgrading:</p>
+    <div class="card" style="font-family:monospace;font-size:0.8rem;background:#1e293b;color:#e2e8f0;white-space:pre-wrap;">-- v1.2
+ALTER TABLE apartments ADD COLUMN IF NOT EXISTS household_id text DEFAULT 'default-family';
+ALTER TABLE apartments ADD COLUMN IF NOT EXISTS rooms text;
+ALTER TABLE apartments ADD COLUMN IF NOT EXISTS reactions jsonb DEFAULT '{}';
+
+-- v1.3
+ALTER TABLE apartments ADD COLUMN IF NOT EXISTS latitude double precision;
+ALTER TABLE apartments ADD COLUMN IF NOT EXISTS longitude double precision;
+
+-- Update existing data to your household
+UPDATE apartments SET household_id = 'your-household-id';</div>
+  </div>
+
   <div class="section">
     <div class="section-title">📋 Change Log</div>
-    <table id="changelog">
-      <thead><tr><th>Date</th><th>Version</th><th>Change</th></tr></thead>
+    <table>
+      <thead><tr><th>Date</th><th>Version</th><th>Changes</th></tr></thead>
       <tbody>
-        <tr><td>Sep 2026</td><td><span class="pill pill-blue">v1.1.0</span></td><td>Yad2 auto-fill, seller name field, expandable card with photo gallery</td></tr>
-        <tr><td>Sep 2026</td><td><span class="pill pill-green">v1.0.0</span></td><td>Initial release — full CRUD, realtime, auth, Vercel deploy</td></tr>
+        <tr><td>Sep 2026</td><td><span class="pill pill-green">v1.3</span></td><td>Interactive map view with Leaflet, auto-geocoding, color-coded markers</td></tr>
+        <tr><td>Sep 2026</td><td><span class="pill pill-pink">v1.2</span></td><td>Multi-household isolation, per-user reactions, rooms field, advanced filtering</td></tr>
+        <tr><td>Sep 2026</td><td><span class="pill pill-blue">v1.1</span></td><td>Yad2 auto-fill, bookmarklet, expandable card gallery</td></tr>
+        <tr><td>Sep 2026</td><td><span class="pill pill-blue">v1.0</span></td><td>Initial release — CRUD, realtime, auth, Vercel deploy</td></tr>
       </tbody>
     </table>
-    <br/>
-    <button onclick="addLog()" style="padding:0.5rem 1rem;border-radius:8px;border:1px solid #0ea5e9;background:#f0f9ff;color:#0ea5e9;font-weight:600;cursor:pointer;font-size:0.85rem;">
-      + Add Log Entry
-    </button>
   </div>
 
-  <div class="footer">
-    ApartmentTracker · Built September 2026 · Next.js + Supabase + Vercel
-  </div>
+  <div class="footer">ApartmentTracker · v1.3 · September 2026 · Next.js + Supabase + Leaflet</div>
 
 </div>
-
-<script>
-  // ── Persist roadmap checkboxes in localStorage ──────────────────────────
-  const KEY = "apt_tracker_roadmap";
-
-  function save(checkbox) {
-    const items = getAll();
-    const label = checkbox.closest("label");
-    const text  = label.textContent.trim();
-    items[text]  = checkbox.checked;
-    localStorage.setItem(KEY, JSON.stringify(items));
-    label.classList.toggle("checked", checkbox.checked);
-  }
-
-  function getAll() {
-    try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; }
-  }
-
-  function restore() {
-    const items = getAll();
-    document.querySelectorAll(".roadmap-item input[type=checkbox]").forEach(cb => {
-      const label = cb.closest("label");
-      const text  = label.textContent.trim();
-      if (items[text]) {
-        cb.checked = true;
-        label.classList.add("checked");
-      }
-    });
-  }
-
-  // ── Add a changelog entry ───────────────────────────────────────────────
-  function addLog() {
-    const date    = prompt("Date (e.g. Oct 2026):", new Date().toLocaleDateString("en-US", { month:"short", year:"numeric" }));
-    if (!date) return;
-    const version = prompt("Version (e.g. v1.1.0):", "v1.1.0");
-    if (!version) return;
-    const change  = prompt("What changed?");
-    if (!change) return;
-
-    const tbody = document.querySelector("#changelog tbody");
-    const row   = document.createElement("tr");
-    row.innerHTML = `<td>${date}</td><td><span class="pill pill-blue">${version}</span></td><td>${change}</td>`;
-    tbody.insertBefore(row, tbody.firstChild);
-  }
-
-  restore();
-</script>
 </body>
 </html>
