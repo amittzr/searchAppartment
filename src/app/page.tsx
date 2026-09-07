@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense, lazy } from "react";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, SearchX, Home, Settings } from "lucide-react";
+import { AlertCircle, SearchX, Home, Settings, Map } from "lucide-react";
 
 import Navbar from "@/components/Navbar";
 import FilterToolbar, { filterAndSortApartments } from "@/components/FilterToolbar";
@@ -10,9 +10,11 @@ import ApartmentCard from "@/components/ApartmentCard";
 import ApartmentModal from "@/components/ApartmentModal";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import HouseholdSettingsModal from "@/components/HouseholdSettingsModal";
+import MapView from "@/components/MapView";
 import { HouseholdProvider, useHousehold } from "@/contexts/HouseholdContext";
 
 import { useApartments } from "@/hooks/useApartments";
+import { geocodeAddress, extractAddressFromTitle } from "@/lib/geocode";
 import type {
   Apartment,
   ApartmentFormData,
@@ -102,6 +104,7 @@ function DashboardContent() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [bookmarkletData, setBookmarkletData] = useState<Partial<ApartmentFormData> | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false);
 
   // Check for bookmarklet auto-fill params on mount
   useEffect(() => {
@@ -155,9 +158,36 @@ function DashboardContent() {
 
   // Called by ApartmentModal on valid submit
   const handleModalSubmit = async (formData: ApartmentFormData) => {
+    const title = formData.title.trim();
+    
+    // Geocode the address if it's new or title changed
+    let latitude: number | null = null;
+    let longitude: number | null = null;
+    
+    const shouldGeocode = !editingApartment || editingApartment.title !== title;
+    
+    if (shouldGeocode && title) {
+      try {
+        const addressToGeocode = extractAddressFromTitle(title);
+        const geoResult = await geocodeAddress(addressToGeocode);
+        if (geoResult) {
+          latitude = geoResult.latitude;
+          longitude = geoResult.longitude;
+          console.log(`[geocode] Found coordinates for "${title}":`, geoResult);
+        }
+      } catch (err) {
+        console.warn('[geocode] Failed to geocode address:', err);
+        // Continue without coordinates - not a blocking error
+      }
+    } else if (editingApartment) {
+      // Keep existing coordinates if title didn't change
+      latitude = editingApartment.latitude;
+      longitude = editingApartment.longitude;
+    }
+
     const payload = {
       url:         formData.url.trim()         || null,
-      title:       formData.title.trim(),
+      title:       title,
       price:       Number(formData.price),
       rooms:       formData.rooms?.trim()      || null,
       phone:       formData.phone.trim()       || null,
@@ -166,6 +196,8 @@ function DashboardContent() {
       images:      formData.images.length > 0 ? formData.images : null,
       notes:       formData.notes.trim()       || null,
       household_id: householdId,
+      latitude,
+      longitude,
     };
 
     let result: { error: string | null };
@@ -219,13 +251,23 @@ function DashboardContent() {
               <> & <span className="font-medium text-slate-700">{partnerName}</span></>
             )}
           </div>
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-          >
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">Settings</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsMapOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              title="View on map"
+            >
+              <Map className="w-4 h-4" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </button>
+          </div>
         </div>
 
         {/* ── Action error banner ─────────────────────────────────────────── */}
@@ -319,6 +361,15 @@ function DashboardContent() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+
+      {/* ── Map View ────────────────────────────────────────────────────────────── */}
+      {isMapOpen && (
+        <MapView
+          apartments={filteredApartments}
+          onClose={() => setIsMapOpen(false)}
+          onSelectApartment={handleOpenEdit}
+        />
+      )}
 
       {/* ── Delete Confirmation Dialog ──────────────────────────────────────── */}
       {deleteConfirmId && (

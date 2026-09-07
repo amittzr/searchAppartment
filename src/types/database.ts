@@ -27,6 +27,8 @@ export interface Apartment {
   reactions: ReactionsMap;        // Per-user reactions { "Amit": "liked", "Noa": "review" }
   status: ApartmentStatus;        // Legacy field (deprecated, kept for migration)
   notes: string | null;
+  latitude: number | null;        // Map coordinates
+  longitude: number | null;       // Map coordinates
   created_at: string;
 }
 
@@ -46,6 +48,8 @@ export interface ApartmentInsert {
   reactions?: ReactionsMap;
   status?: ApartmentStatus;       // Legacy field
   notes?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 // Shape used when updating — every field is optional
@@ -64,6 +68,8 @@ export interface ApartmentUpdate {
   reactions?: ReactionsMap;
   status?: ApartmentStatus;       // Legacy field
   notes?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 // ============================================================

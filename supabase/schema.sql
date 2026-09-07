@@ -24,6 +24,8 @@ create table if not exists public.apartments (
   status       text not null default 'all'    -- DEPRECATED: kept for backward compat, use reactions instead
                  check (status in ('all', 'liked', 'review', 'rejected')),
   notes        text,                          -- shared notes visible to both partners
+  latitude     double precision,              -- v1.3: map coordinates
+  longitude    double precision,              -- v1.3: map coordinates
   created_at   timestamptz not null default now()
 );
 
@@ -34,6 +36,8 @@ create table if not exists public.apartments (
 -- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS household_id text NOT NULL DEFAULT 'default-family';
 -- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS rooms text;
 -- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS reactions jsonb DEFAULT '{}';
+-- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS latitude double precision;
+-- ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS longitude double precision;
 
 -- ============================================================
 -- Row Level Security (RLS)
