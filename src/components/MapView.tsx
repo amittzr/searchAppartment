@@ -93,6 +93,11 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
       const map = L.map(mapContainerRef.current).setView(defaultCenter, 12);
       mapRef.current = map;
 
+      // Close selected apartment when clicking on map (not on marker)
+      map.on("click", () => {
+        setSelectedApartment(null);
+      });
+
       // Add OpenStreetMap tiles
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -131,7 +136,13 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
 
         const marker = L.marker([apt.latitude, apt.longitude], { icon })
           .addTo(map)
-          .on("click", () => {
+          .on("click", (e: { originalEvent: Event }) => {
+            // Stop propagation to prevent map click from firing
+            if (e.originalEvent) {
+              e.originalEvent.stopPropagation();
+            }
+            // Close tooltip when showing card
+            marker.closeTooltip();
             setSelectedApartment(apt);
           });
 
@@ -227,7 +238,10 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
 
           {/* Selected apartment card */}
           {selectedApartment && (
-            <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-slide-up z-20">
+            <div 
+              className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-slide-up z-20"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={() => setSelectedApartment(null)}
                 className="absolute top-2 right-2 p-1 rounded-lg hover:bg-slate-100 transition-colors z-10"
