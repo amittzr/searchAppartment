@@ -4,12 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { X, ExternalLink, Phone, BedDouble, MapPin } from "lucide-react";
 import type { Apartment } from "@/types/database";
 
-// Leaflet types
-declare global {
-  interface Window {
-    L: typeof import("leaflet");
-  }
-}
+// Leaflet types - using any since we load from CDN
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LeafletMap = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LeafletMarker = any;
 
 interface MapViewProps {
   apartments: Apartment[];
@@ -42,8 +41,8 @@ function getMarkerColor(apartment: Apartment): string {
 
 export default function MapView({ apartments, onClose, onSelectApartment }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const markersRef = useRef<LeafletMarker[]>([]);
   const [selectedApartment, setSelectedApartment] = useState<Apartment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,7 +55,8 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
     // Dynamically load Leaflet CSS and JS
     const loadLeaflet = async () => {
       // Check if already loaded
-      if (window.L) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((window as any).L) {
         initializeMap();
         return;
       }
@@ -83,7 +83,8 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
     const initializeMap = () => {
       if (!mapContainerRef.current || mapRef.current) return;
 
-      const L = window.L;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const L = (window as any).L;
 
       // Default center: Tel Aviv
       const defaultCenter: [number, number] = [32.0853, 34.7818];
