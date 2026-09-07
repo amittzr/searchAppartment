@@ -43,6 +43,7 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markersRef = useRef<LeafletMarker[]>([]);
+  const markerClickedRef = useRef(false);
   const [selectedApartment, setSelectedApartment] = useState<Apartment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -95,6 +96,11 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
 
       // Close selected apartment when clicking on map (not on marker)
       map.on("click", () => {
+        // Skip if a marker was just clicked
+        if (markerClickedRef.current) {
+          markerClickedRef.current = false;
+          return;
+        }
         setSelectedApartment(null);
       });
 
@@ -136,11 +142,9 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
 
         const marker = L.marker([apt.latitude, apt.longitude], { icon })
           .addTo(map)
-          .on("click", (e: { originalEvent: Event }) => {
-            // Stop propagation to prevent map click from firing
-            if (e.originalEvent) {
-              e.originalEvent.stopPropagation();
-            }
+          .on("click", () => {
+            // Set flag to prevent map click from closing the card
+            markerClickedRef.current = true;
             // Close tooltip when showing card
             marker.closeTooltip();
             setSelectedApartment(apt);
