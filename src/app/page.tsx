@@ -78,7 +78,7 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   // ── Household context ───────────────────────────────────────────────────────
-  const { householdId, username, partnerName, isConfigured } = useHousehold();
+  const { username, partnerName, categoryConfig, category } = useHousehold();
 
   // ── Data layer ──────────────────────────────────────────────────────────────
   const {
@@ -90,7 +90,7 @@ function DashboardContent() {
     deleteApartment,
     setReaction,
     refetch,
-  } = useApartments({ householdId });
+  } = useApartments();
 
   // ── URL params for bookmarklet auto-fill ────────────────────────────────────
   const searchParams = useSearchParams();
@@ -117,13 +117,6 @@ function DashboardContent() {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [searchParams]);
-
-  // Show settings modal on first visit if not configured
-  useEffect(() => {
-    if (!loading && !isConfigured) {
-      setIsSettingsOpen(true);
-    }
-  }, [loading, isConfigured]);
 
   // ── Filtered and sorted list ────────────────────────────────────────────────
   const filteredApartments = useMemo(() => {
@@ -195,7 +188,7 @@ function DashboardContent() {
       image_url:   formData.image_url.trim()   || null,
       images:      formData.images.length > 0 ? formData.images : null,
       notes:       formData.notes.trim()       || null,
-      household_id: householdId,
+      metadata:    formData.metadata           || {},
       latitude,
       longitude,
     };
@@ -214,8 +207,8 @@ function DashboardContent() {
   };
 
   // Handle reaction changes from ApartmentCard
-  const handleReactionChange = async (apartmentId: string, reactionUsername: string, reaction: ReactionStatus | null) => {
-    const { error: reactionError } = await setReaction(apartmentId, reactionUsername, reaction);
+  const handleReactionChange = async (apartmentId: string, reaction: ReactionStatus | null) => {
+    const { error: reactionError } = await setReaction(apartmentId, reaction);
     if (reactionError) setActionError(reactionError);
   };
 
@@ -247,19 +240,21 @@ function DashboardContent() {
         <div className="flex items-center justify-between">
           <div className="text-sm text-slate-500">
             Welcome, <span className="font-medium text-slate-700">{username}</span>
-            {partnerName && (
+            {partnerName && partnerName !== "Partner" && (
               <> & <span className="font-medium text-slate-700">{partnerName}</span></>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsMapOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-              title="View on map"
-            >
-              <Map className="w-4 h-4" />
-              <span className="hidden sm:inline">Map</span>
-            </button>
+            {category === "apartment" && (
+              <button
+                onClick={() => setIsMapOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                title="View on map"
+              >
+                <Map className="w-4 h-4" />
+                <span className="hidden sm:inline">Map</span>
+              </button>
+            )}
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
@@ -307,16 +302,14 @@ function DashboardContent() {
           filters={filters}
           onFiltersChange={setFilters}
           apartments={apartments}
-          username={username}
-          partnerName={partnerName}
         />
 
         {/* ── Results summary ─────────────────────────────────────────────── */}
         {!loading && (
           <p className="text-xs text-slate-400 px-1">
             {filteredApartments.length === 0
-              ? "No apartments match your filters"
-              : `Showing ${filteredApartments.length} apartment${filteredApartments.length !== 1 ? "s" : ""}`}
+              ? `No ${categoryConfig.label.toLowerCase()} match your filters`
+              : `Showing ${filteredApartments.length} ${filteredApartments.length !== 1 ? categoryConfig.label.toLowerCase() : categoryConfig.label.toLowerCase().replace(/s$/, "")}`}
           </p>
         )}
 
@@ -335,8 +328,6 @@ function DashboardContent() {
               <ApartmentCard
                 key={apartment.id}
                 apartment={apartment}
-                username={username}
-                partnerName={partnerName}
                 onEdit={handleOpenEdit}
                 onDelete={handleDeleteRequest}
                 onReactionChange={handleReactionChange}

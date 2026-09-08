@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ApartmentTracker — Project Tracker v1.3</title>
+  <title>GroupPick — Project Tracker v2.0</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.6; padding: 2rem 1rem; }
-    .container { max-width: 960px; margin: 0 auto; }
-    .header { background: linear-gradient(135deg, #0ea5e9, #0369a1); color: white; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .header { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; }
     .header h1 { font-size: 1.75rem; font-weight: 800; }
-    .header p { opacity: 0.85; margin-top: 0.25rem; font-size: 0.95rem; }
-    .header-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+    .header p { opacity: 0.9; margin-top: 0.25rem; font-size: 0.95rem; }
+    .header-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
     .badge { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+    .badge-new { background: #fbbf24; color: #78350f; border: none; }
     .section { margin-bottom: 2rem; }
-    .section-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+    .section-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 0.5rem; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
     .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
     .card-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; }
@@ -23,31 +24,77 @@
     .pill-green { background: #dcfce7; color: #16a34a; }
     .pill-blue { background: #dbeafe; color: #1d4ed8; }
     .pill-pink { background: #fce7f3; color: #db2777; }
+    .pill-purple { background: #f3e8ff; color: #7c3aed; }
+    .pill-amber { background: #fef3c7; color: #b45309; }
     table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
     th { background: #f8fafc; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; padding: 0.75rem 1rem; text-align: left; }
     td { padding: 0.75rem 1rem; font-size: 0.9rem; border-top: 1px solid #f1f5f9; }
     .checklist { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
     .checklist li { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.9rem; padding: 0.6rem 0.75rem; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
     .done { border-left: 3px solid #22c55e; }
+    .new { border-left: 3px solid #8b5cf6; background: #faf5ff; }
     .footer { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
-    a { color: #0ea5e9; text-decoration: none; }
+    a { color: #8b5cf6; text-decoration: none; }
     a:hover { text-decoration: underline; }
     code { background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85rem; }
+    .highlight-box { background: linear-gradient(135deg, #faf5ff, #f3e8ff); border: 2px solid #c4b5fd; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .highlight-box h3 { color: #6d28d9; font-size: 1rem; margin-bottom: 0.75rem; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
 <div class="container">
 
   <div class="header">
-    <h1>🏠 ApartmentTracker</h1>
-    <p>Private real-time rental apartment tracker for couples — built with Next.js + Supabase</p>
+    <h1>🎯 GroupPick</h1>
+    <p>Collaborative decision-making app for couples — track apartments, venues, cars & more together</p>
     <div class="header-meta">
       <span class="badge">✅ Live</span>
-      <span class="badge">v1.3</span>
-      <span class="badge">Next.js 15.5</span>
-      <span class="badge">Supabase</span>
-      <span class="badge">Leaflet Maps</span>
+      <span class="badge badge-new">v2.0</span>
+      <span class="badge">Next.js 15</span>
+      <span class="badge">Supabase Auth</span>
+      <span class="badge">Multi-Category</span>
       <span class="badge">September 2026</span>
+    </div>
+  </div>
+
+  <!-- What's New in v2.0 -->
+  <div class="highlight-box">
+    <h3>🚀 What's New in v2.0</h3>
+    <div class="two-col">
+      <div>
+        <strong>Real Authentication</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>Supabase Auth with email/password</li>
+          <li>Individual user accounts</li>
+          <li>Invite password gate for signups</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Household System</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>Create or join households</li>
+          <li>Custom invite codes</li>
+          <li>Member management</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Multi-Category</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>🏠 Apartments</li>
+          <li>👰 Wedding Venues</li>
+          <li>🚗 Cars</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Enhanced Reactions</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>❤️ Loved / 👍 Liked</li>
+          <li>👎 Disliked / ❌ Veto</li>
+          <li>💕 Match detection</li>
+        </ul>
+      </div>
     </div>
   </div>
 
@@ -70,6 +117,7 @@
         <tr><td>Language</td><td>TypeScript</td><td>^5</td></tr>
         <tr><td>Styling</td><td>Tailwind CSS</td><td>^3.4.1</td></tr>
         <tr><td>Database</td><td>Supabase (PostgreSQL)</td><td>^2.45.4</td></tr>
+        <tr><td>Authentication</td><td>Supabase Auth + @supabase/ssr</td><td>^0.5.2</td></tr>
         <tr><td>Maps</td><td>Leaflet (CDN)</td><td>1.9.4</td></tr>
         <tr><td>Geocoding</td><td>Nominatim (OpenStreetMap)</td><td>Free API</td></tr>
         <tr><td>Deployment</td><td>Vercel</td><td>—</td></tr>
@@ -78,30 +126,63 @@
   </div>
 
   <div class="section">
-    <div class="section-title">✅ Features v1.0-v1.1 (Core)</div>
+    <div class="section-title">🔐 Features v2.0 — Authentication</div>
     <ul class="checklist">
-      <li class="done"><span>✅</span> Add/Edit/Delete apartments with modal forms</li>
+      <li class="new"><span>✅</span> <strong>Supabase Auth</strong> — Real email/password authentication replaces shared password</li>
+      <li class="new"><span>✅</span> <strong>Signup with invite gate</strong> — Requires <code>APP_PASSWORD</code> to register (prevents strangers)</li>
+      <li class="new"><span>✅</span> <strong>Login page</strong> — Email/password form with error handling</li>
+      <li class="new"><span>✅</span> <strong>Session management</strong> — Secure httpOnly cookies via @supabase/ssr</li>
+      <li class="new"><span>✅</span> <strong>Middleware auth guard</strong> — Protects routes, redirects unauthenticated users</li>
+      <li class="new"><span>✅</span> <strong>Auto-create profile</strong> — Database trigger creates profile on signup</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🏠 Features v2.0 — Households</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>Onboarding flow</strong> — Create new household or join existing one</li>
+      <li class="new"><span>✅</span> <strong>Create household</strong> — Pick name, category, optional custom invite code</li>
+      <li class="new"><span>✅</span> <strong>Join household</strong> — Enter partner's invite code to join</li>
+      <li class="new"><span>✅</span> <strong>Invite codes</strong> — Auto-generated (8-char hex) or custom (4+ alphanumeric)</li>
+      <li class="new"><span>✅</span> <strong>Edit invite code</strong> — Change anytime from settings (pencil icon)</li>
+      <li class="new"><span>✅</span> <strong>Copy invite code</strong> — One-click copy to clipboard</li>
+      <li class="new"><span>✅</span> <strong>View members</strong> — See all household members in settings</li>
+      <li class="new"><span>✅</span> <strong>Household info in navbar</strong> — Name, category badge, member count</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎨 Features v2.0 — Multi-Category</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>Category selection</strong> — Choose: 🏠 Apartments, 👰 Wedding Venues, or 🚗 Cars</li>
+      <li class="new"><span>✅</span> <strong>Dynamic form fields</strong> — Fields change based on category type</li>
+      <li class="new"><span>✅</span> <strong>Category-specific metadata</strong> — Stored in flexible JSONB column</li>
+      <li class="new"><span>✅</span> <strong>Dynamic labels</strong> — "Add Apartment" vs "Add Venue" vs "Add Car"</li>
+      <li class="new"><span>✅</span> <strong>Category badges on cards</strong> — Year/mileage for cars, distance for venues</li>
+      <li class="new"><span>✅</span> <strong>Conditional fields</strong> — Rooms only for apartments/venues, not cars</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">✅ Features v1.0–v1.1 (Core)</div>
+    <ul class="checklist">
+      <li class="done"><span>✅</span> Add/Edit/Delete items with modal forms</li>
       <li class="done"><span>✅</span> Real-time sync via Supabase Realtime</li>
       <li class="done"><span>✅</span> Yad2 auto-fill — paste URL to extract all data</li>
       <li class="done"><span>✅</span> Bookmarklet for one-click save from Yad2</li>
       <li class="done"><span>✅</span> Expandable card with photo gallery</li>
       <li class="done"><span>✅</span> Phone click-to-call + seller name display</li>
-      <li class="done"><span>✅</span> Password authentication with httpOnly cookies</li>
     </ul>
   </div>
 
   <div class="section">
-    <div class="section-title">💕 Features v1.2 (Multi-Household & Reactions)</div>
+    <div class="section-title">💕 Features v1.2 (Reactions & Filtering)</div>
     <ul class="checklist">
-      <li class="done"><span>✅</span> <code>household_id</code> field for multi-tenant isolation</li>
-      <li class="done"><span>✅</span> HouseholdContext with localStorage persistence</li>
-      <li class="done"><span>✅</span> HouseholdSettingsModal for configuring names</li>
       <li class="done"><span>✅</span> Per-user reactions — each partner marks independently</li>
       <li class="done"><span>✅</span> Dual reaction badges on cards (both partners' status)</li>
-      <li class="done"><span>✅</span> Match indicator 💕 when both partners like same apartment</li>
-      <li class="done"><span>✅</span> <code>rooms</code> field extracted from Yad2</li>
+      <li class="done"><span>✅</span> Match indicator 💕 when both partners like same item</li>
       <li class="done"><span>✅</span> FilterToolbar: search, rooms filter, sort, reaction pills</li>
-      <li class="done"><span>✅</span> Reaction filters: All, Both Liked, I Liked, Partner Liked, Review, Rejected, Unsorted</li>
+      <li class="done"><span>✅</span> Reaction filters: All, Both Liked, I Liked, Partner Liked, Review, Rejected</li>
     </ul>
   </div>
 
@@ -109,49 +190,52 @@
     <div class="section-title">🗺️ Features v1.3 (Interactive Map)</div>
     <ul class="checklist">
       <li class="done"><span>✅</span> Map button in header to open full-screen map view</li>
-      <li class="done"><span>✅</span> Leaflet map loaded from CDN (no npm dependency)</li>
-      <li class="done"><span>✅</span> OpenStreetMap tiles (free, no API key)</li>
+      <li class="done"><span>✅</span> Leaflet map with OpenStreetMap tiles (free, no API key)</li>
       <li class="done"><span>✅</span> Auto-geocoding addresses using Nominatim API</li>
-      <li class="done"><span>✅</span> <code>latitude</code>/<code>longitude</code> stored in database</li>
-      <li class="done"><span>✅</span> Color-coded markers: <span class="pill pill-pink">Pink</span> Both liked, <span class="pill pill-green">Red</span> Liked, <span class="pill pill-blue">Blue</span> No reaction, Gray = Rejected</li>
-      <li class="done"><span>✅</span> Hover tooltips showing address and price</li>
-      <li class="done"><span>✅</span> Click marker → mini apartment card with image, price, actions</li>
-      <li class="done"><span>✅</span> Legend explaining marker colors</li>
+      <li class="done"><span>✅</span> Color-coded markers: <span class="pill pill-pink">Pink</span> Both liked, <span class="pill pill-green">Green</span> Liked, <span class="pill pill-blue">Blue</span> No reaction</li>
+      <li class="done"><span>✅</span> Click marker → mini card with image, price, actions</li>
     </ul>
   </div>
 
   <div class="section">
-    <div class="section-title">🗄️ Database Schema</div>
+    <div class="section-title">🗄️ Database Schema (v2.0)</div>
     <table>
-      <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+      <thead><tr><th>Table</th><th>Key Columns</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td><code>id</code></td><td>uuid</td><td>Primary key</td></tr>
-        <tr><td><code>household_id</code></td><td>text</td><td>Multi-tenant key</td></tr>
-        <tr><td><code>title</code></td><td>text</td><td>Address/title</td></tr>
-        <tr><td><code>price</code></td><td>integer</td><td>Monthly rent ₪</td></tr>
-        <tr><td><code>rooms</code></td><td>text</td><td>Room count</td></tr>
-        <tr><td><code>reactions</code></td><td>jsonb</td><td>{"Amit": "liked"}</td></tr>
-        <tr><td><code>latitude</code></td><td>double</td><td>Map coordinate</td></tr>
-        <tr><td><code>longitude</code></td><td>double</td><td>Map coordinate</td></tr>
-        <tr><td><code>images</code></td><td>jsonb</td><td>Image URLs array</td></tr>
+        <tr><td><code>households</code></td><td>id (uuid), name, category, invite_code</td><td>Group isolation</td></tr>
+        <tr><td><code>profiles</code></td><td>id (uuid), full_name, household_id</td><td>User profiles linked to auth.users</td></tr>
+        <tr><td><code>apartments</code></td><td>id, household_id (uuid), category, metadata (jsonb)</td><td>Items with category-specific data</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔒 Auth Flow</div>
+    <table>
+      <thead><tr><th>Step</th><th>Route</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>1. Signup</td><td><code>/signup</code></td><td>Enter invite password + email + password → Create account</td></tr>
+        <tr><td>2. Onboarding</td><td><code>/onboarding</code></td><td>Create household OR join with invite code</td></tr>
+        <tr><td>3. Login</td><td><code>/login</code></td><td>Email + password → Redirect to app or onboarding</td></tr>
+        <tr><td>4. App</td><td><code>/</code></td><td>Main dashboard (requires auth + household)</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="section">
     <div class="section-title">📋 Migrations</div>
-    <p style="margin-bottom:1rem;font-size:0.9rem;color:#64748b;">Run these in Supabase SQL Editor if upgrading:</p>
-    <div class="card" style="font-family:monospace;font-size:0.8rem;background:#1e293b;color:#e2e8f0;white-space:pre-wrap;">-- v1.2
-ALTER TABLE apartments ADD COLUMN IF NOT EXISTS household_id text DEFAULT 'default-family';
-ALTER TABLE apartments ADD COLUMN IF NOT EXISTS rooms text;
-ALTER TABLE apartments ADD COLUMN IF NOT EXISTS reactions jsonb DEFAULT '{}';
+    <p style="margin-bottom:1rem;font-size:0.9rem;color:#64748b;">Run these in Supabase SQL Editor:</p>
+    <div class="card" style="font-family:monospace;font-size:0.8rem;background:#1e293b;color:#e2e8f0;white-space:pre-wrap;">-- v2.0 Full Migration
+-- File: supabase/migration-v2.0-grouppick.sql
+-- Creates: households, profiles tables
+-- Updates: apartments.household_id to UUID
+-- Adds: category, metadata columns
+-- Enables: RLS policies, realtime
 
--- v1.3
-ALTER TABLE apartments ADD COLUMN IF NOT EXISTS latitude double precision;
-ALTER TABLE apartments ADD COLUMN IF NOT EXISTS longitude double precision;
-
--- Update existing data to your household
-UPDATE apartments SET household_id = 'your-household-id';</div>
+-- v2.0 RLS Fix (run after main migration)
+-- File: supabase/fix-rls-recursion.sql
+-- Fixes: Infinite recursion in RLS policies
+-- Creates: get_my_household_id() function</div>
   </div>
 
   <div class="section">
@@ -159,6 +243,7 @@ UPDATE apartments SET household_id = 'your-household-id';</div>
     <table>
       <thead><tr><th>Date</th><th>Version</th><th>Changes</th></tr></thead>
       <tbody>
+        <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.0</span></td><td><strong>GroupPick:</strong> Supabase Auth, households, profiles, multi-category, invite codes, dynamic forms</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-green">v1.3</span></td><td>Interactive map view with Leaflet, auto-geocoding, color-coded markers</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-pink">v1.2</span></td><td>Multi-household isolation, per-user reactions, rooms field, advanced filtering</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-blue">v1.1</span></td><td>Yad2 auto-fill, bookmarklet, expandable card gallery</td></tr>
@@ -167,7 +252,19 @@ UPDATE apartments SET household_id = 'your-household-id';</div>
     </table>
   </div>
 
-  <div class="footer">ApartmentTracker · v1.3 · September 2026 · Next.js + Supabase + Leaflet</div>
+  <div class="section">
+    <div class="section-title">🔮 Roadmap</div>
+    <ul class="checklist">
+      <li><span>⏳</span> Re-enable RLS with proper auth token flow</li>
+      <li><span>⏳</span> Toast notifications for actions</li>
+      <li><span>⏳</span> "Visited" checkbox for apartments</li>
+      <li><span>⏳</span> Leave household option</li>
+      <li><span>⏳</span> Multiple households per user</li>
+      <li><span>⏳</span> Push notifications for new items</li>
+    </ul>
+  </div>
+
+  <div class="footer">GroupPick · v2.0 · September 2026 · Next.js + Supabase Auth + Multi-Category</div>
 
 </div>
 </body>

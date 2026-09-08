@@ -11,6 +11,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import type { FilterState, ReactionFilterType, SortOption, Apartment } from "@/types/database";
+import { useHousehold } from "@/contexts/HouseholdContext";
 
 // ============================================================
 // Filter Toolbar Component
@@ -21,8 +22,6 @@ interface FilterToolbarProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
   apartments: Apartment[];
-  username: string;
-  partnerName: string;
 }
 
 // Room filter options
@@ -58,9 +57,8 @@ export default function FilterToolbar({
   filters,
   onFiltersChange,
   apartments,
-  username,
-  partnerName,
 }: FilterToolbarProps) {
+  const { username, partnerName } = useHousehold();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Count active filters (excluding defaults)

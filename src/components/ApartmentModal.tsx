@@ -16,8 +16,10 @@ import {
   User,
   BedDouble,
 } from "lucide-react";
-import type { Apartment, ApartmentFormData, ApartmentStatus } from "@/types/database";
+import type { Apartment, ApartmentFormData, ApartmentStatus, ItemMetadata } from "@/types/database";
 import { useYad2AutoFill } from "@/hooks/useYad2AutoFill";
+import { useHousehold } from "@/contexts/HouseholdContext";
+import CategoryFields from "./CategoryFields";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -43,6 +45,7 @@ const EMPTY_FORM: ApartmentFormData = {
   images: [],
   notes: "",
   status: "all",
+  metadata: {},
 };
 
 const STATUS_OPTIONS: { value: ApartmentStatus; label: string; emoji: string }[] = [
@@ -62,6 +65,7 @@ export default function ApartmentModal({
   initialData,
   onInitialDataConsumed,
 }: ApartmentModalProps) {
+  const { categoryConfig, category } = useHousehold();
   const [form, setForm]               = useState<ApartmentFormData>(EMPTY_FORM);
   const [errors, setErrors]           = useState<Partial<Record<keyof ApartmentFormData, string>>>({});
   const [submitting, setSubmitting]   = useState(false);
@@ -88,6 +92,7 @@ export default function ApartmentModal({
         images:      editingApartment.images      ?? [],
         notes:       editingApartment.notes       ?? "",
         status:      editingApartment.status,
+        metadata:    editingApartment.metadata    ?? {},
       });
     } else if (initialData && Object.keys(initialData).length > 0) {
       // Pre-fill from bookmarklet data
@@ -246,12 +251,14 @@ export default function ApartmentModal({
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 flex-shrink-0">
           <div>
             <h2 id="modal-title" className="text-lg font-bold text-slate-900">
-              {isEditing ? "Edit Apartment" : "Add New Apartment"}
+              {isEditing ? `Edit ${categoryConfig.emoji}` : `Add New ${categoryConfig.emoji}`}
             </h2>
             <p className="text-sm text-slate-400 mt-0.5">
               {isEditing
                 ? "Update the details below."
-                : "Paste a Yad2 URL and click Auto-Fill 🪄, or fill in manually."}
+                : category === "apartment" 
+                  ? "Paste a Yad2 URL and click Auto-Fill, or fill in manually."
+                  : `Enter the ${categoryConfig.label.toLowerCase()} details below.`}
             </p>
           </div>
           <button
@@ -353,7 +360,7 @@ export default function ApartmentModal({
 
             {/* ── Title / Address ──────────────────────────────────────── */}
             <Field
-              label="Title / Address"
+              label={categoryConfig.titleLabel}
               icon={<MapPin className="w-4 h-4" />}
               error={errors.title}
               required
@@ -362,7 +369,9 @@ export default function ApartmentModal({
                 type="text"
                 value={form.title}
                 onChange={(e) => setField("title", e.target.value)}
-                placeholder="3 rooms, Florentine, Tel Aviv"
+                placeholder={category === "apartment" ? "3 rooms, Florentine, Tel Aviv" : 
+                             category === "bride_venue" ? "Villa Noa, Caesarea" : 
+                             "Toyota Camry 2022"}
                 className={inputClass(!!errors.title)}
                 autoComplete="off"
               />
@@ -370,7 +379,7 @@ export default function ApartmentModal({
 
             {/* ── Price ────────────────────────────────────────────────── */}
             <Field
-              label="Monthly Price (₪)"
+              label={categoryConfig.priceLabel}
               icon={<DollarSign className="w-4 h-4" />}
               error={errors.price}
               required
@@ -380,27 +389,31 @@ export default function ApartmentModal({
                 min="0"
                 value={form.price}
                 onChange={(e) => setField("price", e.target.value)}
-                placeholder="6500"
+                placeholder={category === "apartment" ? "6500" : 
+                             category === "bride_venue" ? "15000" : 
+                             "85000"}
                 className={inputClass(!!errors.price)}
               />
             </Field>
 
-            {/* ── Rooms ────────────────────────────────────────────────── */}
-            <Field
-              label="Rooms"
-              icon={<BedDouble className="w-4 h-4" />}
-              error={errors.rooms}
-              hint="e.g., 3 or 3.5"
-            >
-              <input
-                type="text"
-                value={form.rooms}
-                onChange={(e) => setField("rooms", e.target.value)}
-                placeholder="3"
-                className={inputClass(!!errors.rooms)}
-                autoComplete="off"
-              />
-            </Field>
+            {/* ── Rooms (only for apartments and venues) ───────────────── */}
+            {(category === "apartment" || category === "bride_venue") && (
+              <Field
+                label={category === "bride_venue" ? "Rooms/Suites" : "Rooms"}
+                icon={<BedDouble className="w-4 h-4" />}
+                error={errors.rooms}
+                hint="e.g., 3 or 3.5"
+              >
+                <input
+                  type="text"
+                  value={form.rooms}
+                  onChange={(e) => setField("rooms", e.target.value)}
+                  placeholder="3"
+                  className={inputClass(!!errors.rooms)}
+                  autoComplete="off"
+                />
+              </Field>
+            )}
 
             {/* ── Phone ────────────────────────────────────────────────── */}
             <Field
@@ -467,6 +480,12 @@ export default function ApartmentModal({
               />
             </Field>
 
+            {/* ── Category-specific fields ──────────────────────────── */}
+            <CategoryFields
+              metadata={form.metadata}
+              onChange={(metadata) => setField("metadata", metadata)}
+            />
+
             {/* ── Status selector ──────────────────────────────────────── */}
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">Status</label>
@@ -513,7 +532,7 @@ export default function ApartmentModal({
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-brand-600 hover:to-brand-800 active:scale-95 transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {submitting ? "Saving…" : isEditing ? "Save Changes" : "Add Apartment"}
+            {submitting ? "Saving…" : isEditing ? "Save Changes" : `Add ${categoryConfig.emoji}`}
           </button>
         </div>
 

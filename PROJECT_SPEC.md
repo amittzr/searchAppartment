@@ -1,7 +1,8 @@
-# ApartmentTracker — Project Specification
+# GroupPick — Project Specification
 
-> A private, real-time rental apartment tracking app for couples.
-> Built with Next.js 15, Supabase, and Tailwind CSS. Deployed on Vercel.
+> A private, real-time collaborative decision-making app for couples.
+> Track apartments, wedding venues, cars, or any category together.
+> Built with Next.js 15, Supabase Auth, and Tailwind CSS. Deployed on Vercel.
 
 ---
 
@@ -10,7 +11,7 @@
 - **Production URL:** https://search-appartment.vercel.app *(update if domain changes)*
 - **Repository:** https://github.com/amittzr/searchAppartment
 - **Database:** Supabase — project `khozzonoqctwbzsowulv` (ap-southeast-1, Singapore)
-- **Last stable version:** v1.3 — September 2026
+- **Current Version:** v2.0 — September 2026
 
 ---
 
@@ -23,6 +24,7 @@
 | Styling | Tailwind CSS | ^3.4.1 |
 | Icons | lucide-react | ^0.460.0 |
 | Database | Supabase (PostgreSQL) | ^2.45.4 |
+| Authentication | Supabase Auth + @supabase/ssr | ^0.5.2 |
 | Maps | Leaflet (CDN) | 1.9.4 |
 | Geocoding | Nominatim (OpenStreetMap) | Free API |
 | Deployment | Vercel | — |
@@ -35,217 +37,306 @@
 src/
 ├── app/
 │   ├── page.tsx              ← Main dashboard (filter, grid, map, modals)
-│   ├── layout.tsx            ← Root layout, metadata, Inter font
+│   ├── layout.tsx            ← Root layout, HouseholdProvider wrapper
 │   ├── globals.css           ← Tailwind base + custom animations
+│   ├── login/
+│   │   └── page.tsx          ← Supabase Auth login page
+│   ├── signup/
+│   │   └── page.tsx          ← Supabase Auth signup (with invite password gate)
+│   ├── onboarding/
+│   │   └── page.tsx          ← Create or join household flow
 │   ├── setup/
 │   │   └── page.tsx          ← Bookmarklet setup page
-│   ├── login/
-│   │   └── page.tsx          ← Shared password login page
 │   └── api/
-│       ├── auth/
-│       │   ├── login/route.ts    ← POST: validate password, set cookie
-│       │   └── logout/route.ts   ← POST: clear cookie, redirect to /login
 │       └── scrape-yad2/route.ts  ← POST: Yad2 auto-fill scraper API
 ├── components/
-│   ├── Navbar.tsx            ← Sticky header: logo, refresh, logout, add
+│   ├── Navbar.tsx            ← Sticky header: household info, user menu, add button
 │   ├── FilterToolbar.tsx     ← Advanced filters: search, rooms, sort, reactions
-│   ├── ApartmentCard.tsx     ← Card: image, price, reactions, dual-user badges
-│   ├── ApartmentModal.tsx    ← Add / Edit form modal with rooms field
+│   ├── ApartmentCard.tsx     ← Card: image, price, reactions, category badges
+│   ├── ApartmentModal.tsx    ← Add/Edit form with dynamic category fields
+│   ├── CategoryFields.tsx    ← Dynamic form fields based on category type
 │   ├── MapView.tsx           ← Interactive map with apartment markers
-│   ├── HouseholdSettingsModal.tsx ← Configure household ID and partner names
+│   ├── HouseholdSettingsModal.tsx ← Household info, editable invite code, members
 │   └── LoadingSkeleton.tsx   ← Shimmer placeholder grid
 ├── contexts/
-│   └── HouseholdContext.tsx  ← Multi-tenant household state (localStorage)
+│   └── HouseholdContext.tsx  ← Auth state, profile, household, members (Supabase)
 ├── hooks/
 │   ├── useApartments.ts      ← CRUD + reactions + household scoping + Realtime
 │   └── useYad2AutoFill.ts    ← Auto-fill hook for Yad2 URLs
 ├── lib/
-│   ├── supabase.ts           ← Singleton Supabase client
+│   ├── supabase-client.ts    ← Browser Supabase client (singleton)
+│   ├── supabase-server.ts    ← Server Components Supabase client
+│   ├── supabase-middleware.ts ← Middleware Supabase client (session refresh)
 │   └── geocode.ts            ← Nominatim geocoding utility
 ├── types/
-│   └── database.ts           ← Apartment, ReactionsMap, FilterState, HouseholdState types
-└── middleware.ts              ← Edge middleware: cookie auth guard
+│   └── database.ts           ← Types: Apartment, Profile, Household, CategoryConfig
+└── middleware.ts              ← Auth guard: redirect unauthenticated to /login
 ```
 
 ---
 
 ## Database Schema (Supabase PostgreSQL)
 
-**Table: `public.apartments`**
+### Table: `public.households`
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | Primary key, auto-generated |
-| `household_id` | text NOT NULL | Multi-tenant isolation key (default: 'default-family') |
-| `url` | text | Link to original Yad2 / Facebook ad |
-| `title` | text NOT NULL | Address or apartment title |
-| `price` | integer NOT NULL | Monthly rent in ₪ |
-| `rooms` | text | Number of rooms (e.g., "3", "3.5", "4+") |
-| `phone` | text | Landlord / agent phone |
-| `seller_name` | text | Contact name (auto-filled from Yad2) |
-| `image_url` | text | Direct image link for card hero |
-| `images` | jsonb | Array of all image URLs for gallery |
-| `reactions` | jsonb | Per-user reactions: `{"Amit": "liked", "Noa": "review"}` |
-| `status` | text NOT NULL | DEPRECATED — kept for backward compat |
-| `notes` | text | Shared notes (visible to both) |
-| `latitude` | double precision | Map coordinates (auto-geocoded) |
-| `longitude` | double precision | Map coordinates (auto-geocoded) |
-| `created_at` | timestamptz | Auto-set to `now()` |
+| `name` | text NOT NULL | Household display name (e.g., "Amit & Noa") |
+| `category` | text NOT NULL | 'apartment' \| 'bride_venue' \| 'car' |
+| `invite_code` | text UNIQUE | 8-char hex or custom code for joining |
+| `created_by` | uuid | References auth.users(id) |
+| `created_at` | timestamptz | Auto-set to now() |
 
-**Indexes:** `household_id`, `created_at DESC`, `price ASC`, `rooms`
-**RLS:** Enabled — open anon policy (access controlled by app-level password)
-**Realtime:** Enabled on `supabase_realtime` publication
+### Table: `public.profiles`
 
-**Migration v1.2 (run if upgrading):**
-```sql
-ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS household_id text NOT NULL DEFAULT 'default-family';
-ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS rooms text;
-ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS reactions jsonb DEFAULT '{}';
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid | Primary key, references auth.users(id) |
+| `email` | text | User's email |
+| `full_name` | text NOT NULL | Display name for reactions |
+| `avatar_url` | text | Optional profile image |
+| `household_id` | uuid | References households(id), nullable until joined |
+| `created_at` | timestamptz | Auto-set to now() |
+| `updated_at` | timestamptz | Auto-updated |
+
+### Table: `public.apartments` (Items)
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid | Primary key, auto-generated |
+| `household_id` | uuid NOT NULL | References households(id) — **UUID type** |
+| `category` | text | Inherited from household: apartment/bride_venue/car |
+| `url` | text | Link to original listing |
+| `title` | text NOT NULL | Address or item title |
+| `price` | integer NOT NULL | Price in ₪ |
+| `rooms` | text | Number of rooms (apartments/venues only) |
+| `phone` | text | Contact phone |
+| `seller_name` | text | Contact name |
+| `image_url` | text | Hero image URL |
+| `images` | jsonb | Array of all image URLs |
+| `reactions` | jsonb | Per-user reactions: `{"Amit": "loved", "Noa": "liked"}` |
+| `metadata` | jsonb | Category-specific fields (see below) |
+| `notes` | text | Shared notes |
+| `latitude` | double precision | Map coordinates |
+| `longitude` | double precision | Map coordinates |
+| `status` | text | DEPRECATED — kept for backward compat |
+| `created_at` | timestamptz | Auto-set to now() |
+
+### Category-Specific Metadata Fields
+
+**Apartment (`category: 'apartment'`):**
+```json
+{
+  "floor": "3",
+  "parking": true,
+  "elevator": true,
+  "balcony": true,
+  "pets_allowed": false,
+  "air_conditioning": true
+}
 ```
 
-**Migration v1.3 (run if upgrading):**
-```sql
-ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS latitude double precision;
-ALTER TABLE public.apartments ADD COLUMN IF NOT EXISTS longitude double precision;
+**Wedding Venue (`category: 'bride_venue'`):**
+```json
+{
+  "capacity": "200",
+  "venue_type": "hall",
+  "catering_included": true,
+  "outdoor_area": true,
+  "distance_km": "15"
+}
+```
+
+**Car (`category: 'car'`):**
+```json
+{
+  "year": "2022",
+  "mileage": "45000",
+  "fuel_type": "hybrid",
+  "transmission": "automatic",
+  "color": "white"
+}
 ```
 
 ---
 
-## Authentication
+## Authentication (v2.0)
 
-- **Mechanism:** Shared password stored in `APP_PASSWORD` env variable
-- **Flow:** POST `/api/auth/login` → validates password → sets `apt_session` httpOnly cookie (7-day expiry)
-- **Guard:** `src/middleware.ts` (Vercel Edge Runtime) checks cookie on every request
-- **Logout:** POST `/api/auth/logout` → expires cookie → redirects to `/login`
-- **No Supabase Auth used** — intentional, keeps it simple for two users
+### Overview
+- **Provider:** Supabase Auth with email/password
+- **Session:** Managed via `@supabase/ssr` with secure httpOnly cookies
+- **Middleware:** `src/middleware.ts` refreshes session and guards protected routes
+
+### Auth Flow
+1. **Signup** (`/signup`)
+   - Requires **invite password** (`NEXT_PUBLIC_APP_PASSWORD`) to prevent unauthorized signups
+   - Creates user in `auth.users`
+   - Trigger auto-creates profile in `public.profiles`
+   - Redirects to `/onboarding`
+
+2. **Onboarding** (`/onboarding`)
+   - User chooses: **Create Household** or **Join Household**
+   - Create: Pick category, name, optional custom invite code
+   - Join: Enter partner's invite code
+   - Sets `profiles.household_id`
+
+3. **Login** (`/login`)
+   - Email/password authentication
+   - Redirects to `/onboarding` if no household, else `/`
+
+4. **Session Refresh**
+   - Middleware refreshes session on every request
+   - Cookies managed by Supabase SSR helpers
+
+### Route Protection
+| Route | Access |
+|---|---|
+| `/login`, `/signup` | Public (redirects to app if authenticated) |
+| `/onboarding` | Auth required, no household required |
+| `/`, all other routes | Auth + household required |
+
+---
+
+## Row Level Security (RLS)
+
+### Security Function
+```sql
+CREATE FUNCTION public.get_my_household_id() RETURNS uuid
+LANGUAGE sql STABLE SECURITY DEFINER
+AS $$ SELECT household_id FROM public.profiles WHERE id = auth.uid() $$;
+```
+
+### Policies
+
+**Households:**
+- SELECT: `id = get_my_household_id()`
+- INSERT: `auth.uid() IS NOT NULL`
+- UPDATE: `id = get_my_household_id()`
+
+**Profiles:**
+- SELECT own: `id = auth.uid()`
+- SELECT members: `household_id = get_my_household_id()`
+- INSERT: `id = auth.uid()`
+- UPDATE: `id = auth.uid()`
+
+**Apartments:**
+- SELECT/INSERT/UPDATE/DELETE: `household_id = get_my_household_id()`
 
 ---
 
 ## Environment Variables
 
-| Variable | Where set | Purpose |
+| Variable | Where Set | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Vercel + `.env.local` | Supabase project base URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + `.env.local` | Supabase anon/public JWT |
-| `APP_PASSWORD` | Vercel + `.env.local` | Shared login password |
-| `YAD2_COOKIES` | `.env.local` only | Browser cookies for Yad2 auto-fill (refresh monthly) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Vercel + `.env.local` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + `.env.local` | Supabase anon JWT |
+| `NEXT_PUBLIC_APP_PASSWORD` | Vercel + `.env.local` | Gate password for signup |
+| `APP_PASSWORD` | Vercel + `.env.local` | Server-side reference (same value) |
+| `YAD2_COOKIES` | `.env.local` only | Browser cookies for Yad2 scraping |
 
 ---
 
-## Features Implemented
+## Features by Version
 
-### Core Features (v1.0)
-- [x] Add apartment (modal form with validation)
-- [x] Edit apartment
-- [x] Delete apartment (2-step confirm)
-- [x] Real-time sync via Supabase Realtime (instant updates for both users)
+### v1.0 — Core Features
+- [x] Add/Edit/Delete apartments with modal forms
+- [x] Real-time sync via Supabase Realtime
 - [x] Source auto-detection: Yad2 / Facebook from URL
-- [x] Direct link to original listing (opens in new tab)
-- [x] Phone number click-to-call
-- [x] Seller/contact name display
+- [x] Phone click-to-call + seller name display
 - [x] Shared notes per apartment
-- [x] Responsive design (mobile-first)
-- [x] Loading skeleton (shimmer cards)
-- [x] Empty state (per filter + global)
-- [x] Error handling with user-friendly banners
+- [x] Responsive mobile-first design
+- [x] Loading skeletons + empty states
 - [x] Shared password authentication
-- [x] Logout button in navbar
-- [x] `?from=` redirect after login
-- [x] Production build on Vercel with CI/CD via GitHub
 
-### Yad2 Auto-Fill (v1.1)
-- [x] Paste Yad2 URL → Auto-Fill button extracts listing data
-- [x] Extracts: title/address, price, phone number, seller name, all images, rooms
-- [x] Uses server-side scraping with cookie authentication
-- [x] Bypasses Radware bot protection via session cookies
-- [x] Customer API integration for phone number retrieval
-- [x] Bookmarklet for one-click save from Yad2 pages
+### v1.1 — Yad2 Auto-Fill
+- [x] Paste Yad2 URL → Auto-Fill extracts all data
+- [x] Server-side scraping with cookie auth
+- [x] Bookmarklet for one-click save
+- [x] Expandable card with photo gallery
 
-### Expandable Card View (v1.1)
-- [x] Click apartment image to expand into full-screen overlay
-- [x] Photo gallery with left/right navigation arrows
-- [x] Thumbnail strip for quick image selection (desktop)
-- [x] Image counter (e.g., "2 / 4")
-- [x] Contact section showing seller name + clickable phone
-- [x] Full notes display
-- [x] Edit/Delete/Open Original actions
-
-### Multi-Household & Per-User Reactions (v1.2)
+### v1.2 — Multi-Household & Reactions
 - [x] `household_id` field for multi-tenant isolation
-- [x] HouseholdContext with localStorage persistence
-- [x] HouseholdSettingsModal for configuring household ID and partner names
-- [x] Per-user reactions: each partner can mark liked/review/rejected independently
-- [x] Dual reaction badges on cards showing both partners' status
-- [x] Match indicator when both partners like the same apartment
-- [x] Reactions stored in JSONB field: `{"Partner1": "liked", "Partner2": "review"}`
-- [x] `rooms` field extracted from Yad2 listings
-- [x] Rooms badge displayed on apartment cards
+- [x] Per-user reactions: liked/review/rejected independently
+- [x] Dual reaction badges showing both partners' status
+- [x] Match indicator when both partners like same item
+- [x] `rooms` field from Yad2
+- [x] FilterToolbar: search, rooms, sort, reaction filters
 
-### Advanced Filtering (v1.2)
-- [x] FilterToolbar component replacing simple tabs
-- [x] Search by title, notes, or seller name
-- [x] Filter by number of rooms (1, 2, 3, 4, 4+)
-- [x] Sort options: Newest, Oldest, Price Low→High, Price High→Low
-- [x] Reaction filter pills with counts:
-  - All apartments
-  - Both liked (💕)
-  - I liked (❤️)
-  - Partner liked (💜)
-  - To review (🤔)
-  - Rejected (❌)
-  - Unsorted (📋)
+### v1.3 — Interactive Map
+- [x] Full-screen Leaflet map view
+- [x] Auto-geocoding with Nominatim
+- [x] Color-coded markers by reaction status
+- [x] Click marker → mini card with actions
 
-### Interactive Map View (v1.3)
-- [x] Map button in header to open full-screen map
-- [x] Leaflet map loaded from CDN (no npm dependency)
-- [x] OpenStreetMap tiles (free, no API key required)
-- [x] Auto-geocoding of addresses using Nominatim API
-- [x] Coordinates stored in database (latitude/longitude)
-- [x] Color-coded markers based on reactions:
-  - Pink: Both partners liked
-  - Red: Someone liked
-  - Blue: No reaction yet
-  - Gray: Rejected
-- [x] Hover tooltips showing address and price
-- [x] Click marker to show mini apartment card
-- [x] Mini card with image, price, rooms, action buttons
-- [x] Legend explaining marker colors
-- [x] Click on map to dismiss mini card
-- [x] "View details" button to open apartment for editing
+### v2.0 — GroupPick (Real Auth & Multi-Category)
+
+#### Authentication Overhaul
+- [x] **Supabase Auth** replaces shared password
+- [x] **Signup page** with invite password gate
+- [x] **Login page** with email/password
+- [x] **Onboarding flow** — create or join household
+- [x] **Session management** via @supabase/ssr cookies
+- [x] **Middleware auth guard** with proper redirects
+- [x] **Auto-create profile** trigger on signup
+
+#### Database Restructure
+- [x] **households table** — UUID primary key, category, invite_code
+- [x] **profiles table** — links auth.users to household membership
+- [x] **apartments.household_id** — converted from TEXT to UUID
+- [x] **RLS policies** — proper row-level security with SECURITY DEFINER function
+- [x] **Realtime** enabled on all tables
+
+#### Household Management
+- [x] **Create household** — pick name, category, optional custom invite code
+- [x] **Join household** — enter partner's invite code
+- [x] **Invite codes** — auto-generated (8-char hex) or custom (4+ alphanumeric)
+- [x] **Edit invite code** — change anytime from settings modal
+- [x] **Copy invite code** — one-click copy to clipboard
+- [x] **View members** — see who's in your household
+
+#### Multi-Category Support
+- [x] **Category selection** — apartment, bride_venue, or car
+- [x] **Dynamic form fields** — fields change based on category
+- [x] **Category-specific metadata** — stored in JSONB column
+- [x] **Dynamic labels** — "Add Apartment" vs "Add Venue" vs "Add Car"
+- [x] **Category badges** — year/mileage for cars, distance for venues
+
+#### Reaction System Upgrade
+- [x] **4 reaction types:** ❤️ Loved, 👍 Liked, 👎 Disliked, ❌ Veto
+- [x] **Match detection** — both partners ❤️ = Match! highlight
+- [x] **Reaction counts** — see totals per item
 
 ---
 
-## Upgrade Roadmap (Ideas for Future Versions)
+## SQL Migrations
 
-### v1.4 — Content Improvements
-- [ ] "Visited" checkbox to track which ones you toured
-- [ ] Visit date / appointment scheduler per apartment
-- [ ] Star rating (1–5) in addition to reactions
-- [ ] Copy phone number to clipboard button
-- [ ] Toast notifications instead of error banners
+### v2.0 Migration (Full)
+Located at: `supabase/migration-v2.0-grouppick.sql`
 
-### v1.5 — Collaboration
-- [ ] Comments thread per apartment (instead of single shared notes)
-- [ ] Push notifications when partner adds a new apartment
-- [ ] Activity log showing recent changes
+Key operations:
+1. Create `households` table
+2. Create `profiles` table
+3. Convert `apartments.household_id` from TEXT to UUID
+4. Add `category` and `metadata` columns to apartments
+5. Create RLS policies
+6. Create `handle_new_user()` trigger
+7. Enable Realtime on new tables
 
-### v2.0 — Power Features
-- [ ] Facebook Marketplace URL scraper
-- [ ] Side-by-side comparison view (pick 2–3 apartments)
-- [ ] Export list to PDF or Excel
-- [ ] Custom tags / labels per apartment
-- [ ] Price history tracking (if price changes on re-edit)
+### v2.0 RLS Fix
+Located at: `supabase/fix-rls-recursion.sql`
+
+Fixes infinite recursion in RLS policies by using SECURITY DEFINER function.
 
 ---
 
 ## Known Limitations
 
-- No per-user auth — household members share data via household_id in localStorage
-- Image URLs are user-supplied — broken links show a placeholder
-- No rate limiting beyond a 500ms delay on wrong password
+- RLS currently disabled for development (re-enable for production)
 - Supabase free tier pauses after 1 week of inactivity
 - Geocoding rate limit: 1 request per second (Nominatim)
-- Map requires coordinates — existing apartments need to be re-saved to geocode
+- Email rate limit: 4 per hour per address (Supabase free tier)
+- Single household per user (no multi-household switching yet)
 
 ---
 
@@ -258,8 +349,35 @@ npm run start     # Run production build locally
 npm run lint      # ESLint check
 ```
 
+---
+
 ## Deployment
 
 Push to `main` branch → Vercel auto-deploys.
 
-Manual redeploy: Vercel Dashboard → Deployments → Redeploy.
+**Required Vercel Environment Variables:**
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_APP_PASSWORD`
+- `APP_PASSWORD`
+
+---
+
+## Upgrade Roadmap
+
+### v2.1 — Polish
+- [ ] Re-enable RLS with proper auth token flow
+- [ ] Toast notifications for actions
+- [ ] "Visited" checkbox for apartments
+- [ ] Leave household option
+
+### v2.2 — Collaboration
+- [ ] Comments thread per item
+- [ ] Push notifications for new items
+- [ ] Activity log
+
+### v3.0 — Power Features
+- [ ] Multiple households per user
+- [ ] Facebook Marketplace scraper
+- [ ] Side-by-side comparison view
+- [ ] Export to PDF/Excel

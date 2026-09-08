@@ -1,3 +1,9 @@
+// ============================================================
+// Legacy Supabase client export
+// This file provides backward compatibility for existing hooks
+// New code should use supabase-client.ts or supabase-server.ts
+// ============================================================
+
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -10,9 +16,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// Untyped client — row types are enforced at the hook level via explicit casting,
-// which avoids the TypeScript generic inference collapse that occurs when a
-// custom Database type doesn't exactly match the SDK's internal shape.
+// Legacy client for hooks that don't need auth
+// For auth-aware operations, use supabase-client.ts or supabase-server.ts
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   realtime: {
     params: {
@@ -20,3 +25,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     },
   },
 });
+
+// Re-export client-side utilities only
+// Server utilities should be imported directly from supabase-server.ts
+export { getSupabaseClient, createClientSupabaseClient } from "./supabase-client";

@@ -1,42 +1,125 @@
 // ============================================================
-// Supabase Database type definitions
-// Keep in sync with supabase/schema.sql
+// GroupPick v2.0 — Supabase Database Type Definitions
+// Keep in sync with supabase/migration-v2.0-grouppick.sql
 // ============================================================
 
-// Reaction status for individual users
+// ── Category Types ───────────────────────────────────────────
+export type CategoryType = "apartment" | "bride_venue" | "car";
+
+// ── Reaction Types ───────────────────────────────────────────
 export type ReactionStatus = "liked" | "review" | "rejected";
-
-// Legacy status type (kept for backward compatibility in filters)
-export type ApartmentStatus = "all" | "liked" | "review" | "rejected";
-
-// Reactions object: maps username to their reaction
 export type ReactionsMap = Record<string, ReactionStatus>;
 
-// Full row as returned from the database
-export interface Apartment {
+// Legacy status type (kept for backward compatibility)
+export type ApartmentStatus = "all" | "liked" | "review" | "rejected";
+
+// ── Household Types ──────────────────────────────────────────
+export interface Household {
   id: string;
-  household_id: string;           // Multi-tenant household isolation
-  url: string | null;
-  title: string;
-  price: number;
-  rooms: string | null;           // Room count (e.g., "3" or "3.5")
-  phone: string | null;
-  seller_name: string | null;
-  image_url: string | null;
-  images: string[] | null;        // Array of all image URLs for gallery
-  reactions: ReactionsMap;        // Per-user reactions { "Amit": "liked", "Noa": "review" }
-  status: ApartmentStatus;        // Legacy field (deprecated, kept for migration)
-  notes: string | null;
-  latitude: number | null;        // Map coordinates
-  longitude: number | null;       // Map coordinates
+  name: string;
+  category: CategoryType;
+  invite_code: string;
+  created_by: string | null;
   created_at: string;
 }
 
-// Shape used when inserting — id and created_at are server-generated
-export interface ApartmentInsert {
+export interface HouseholdInsert {
+  id?: string;
+  name: string;
+  category: CategoryType;
+  invite_code?: string;
+  created_by?: string;
+  created_at?: string;
+}
+
+// ── Profile Types ────────────────────────────────────────────
+export interface Profile {
+  id: string;
+  email: string | null;
+  full_name: string;
+  avatar_url: string | null;
+  household_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProfileInsert {
+  id: string;
+  email?: string | null;
+  full_name: string;
+  avatar_url?: string | null;
+  household_id?: string | null;
+}
+
+export interface ProfileUpdate {
+  email?: string | null;
+  full_name?: string;
+  avatar_url?: string | null;
+  household_id?: string | null;
+  updated_at?: string;
+}
+
+// ── Category-Specific Metadata ───────────────────────────────
+export interface ApartmentMetadata {
+  floor?: number;
+  parking?: boolean;
+  balcony?: boolean;
+  elevator?: boolean;
+  furnished?: boolean;
+  pet_friendly?: boolean;
+}
+
+export interface BrideVenueMetadata {
+  distance_km?: number;
+  suites?: number;
+  max_guests?: number;
+  catering?: boolean;
+  spa?: boolean;
+  pool?: boolean;
+}
+
+export interface CarMetadata {
+  make?: string;
+  model?: string;
+  year?: number;
+  mileage?: number;
+  fuel_type?: string;
+  transmission?: string;
+  owner_type?: string; // "private" | "dealer"
+}
+
+export type ItemMetadata = ApartmentMetadata | BrideVenueMetadata | CarMetadata;
+
+// ── Item Types (Generalized Apartment) ───────────────────────
+export interface Item {
+  id: string;
+  household_id: string;
+  category: CategoryType;
+  url: string | null;
+  title: string;
+  price: number;
+  rooms: string | null;
+  phone: string | null;
+  seller_name: string | null;
+  image_url: string | null;
+  images: string[] | null;
+  reactions: ReactionsMap;
+  metadata: ItemMetadata;
+  notes: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  status: ApartmentStatus;  // Legacy field
+  created_at: string;
+}
+
+// Alias for backward compatibility
+export type Apartment = Item;
+
+export interface ItemInsert {
   id?: string;
   created_at?: string;
-  household_id: string;           // Required for multi-tenant isolation
+  household_id: string;
+  category?: CategoryType;
   url?: string | null;
   title: string;
   price: number;
@@ -46,17 +129,20 @@ export interface ApartmentInsert {
   image_url?: string | null;
   images?: string[] | null;
   reactions?: ReactionsMap;
-  status?: ApartmentStatus;       // Legacy field
+  metadata?: ItemMetadata;
   notes?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  status?: ApartmentStatus;
 }
 
-// Shape used when updating — every field is optional
-export interface ApartmentUpdate {
+export type ApartmentInsert = ItemInsert;
+
+export interface ItemUpdate {
   id?: string;
   created_at?: string;
   household_id?: string;
+  category?: CategoryType;
   url?: string | null;
   title?: string;
   price?: number;
@@ -66,23 +152,35 @@ export interface ApartmentUpdate {
   image_url?: string | null;
   images?: string[] | null;
   reactions?: ReactionsMap;
-  status?: ApartmentStatus;       // Legacy field
+  metadata?: ItemMetadata;
   notes?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  status?: ApartmentStatus;
 }
 
-// ============================================================
-// Supabase typed database schema
-// Must match the exact shape expected by @supabase/supabase-js
-// ============================================================
+export type ApartmentUpdate = ItemUpdate;
+
+// ── Database Schema ──────────────────────────────────────────
 export interface Database {
   public: {
     Tables: {
+      households: {
+        Row: Household;
+        Insert: HouseholdInsert;
+        Update: Partial<HouseholdInsert>;
+        Relationships: [];
+      };
+      profiles: {
+        Row: Profile;
+        Insert: ProfileInsert;
+        Update: ProfileUpdate;
+        Relationships: [];
+      };
       apartments: {
-        Row: Apartment;
-        Insert: ApartmentInsert;
-        Update: ApartmentUpdate;
+        Row: Item;
+        Insert: ItemInsert;
+        Update: ItemUpdate;
         Relationships: [];
       };
     };
@@ -93,22 +191,18 @@ export interface Database {
   };
 }
 
-// ============================================================
-// UI / component helper types
-// ============================================================
+// ── UI / Component Helper Types ──────────────────────────────
 
-// Filter status — "all" means show everything, others filter by reaction status
 export type FilterStatus = ApartmentStatus;
 
-// Reaction filter options for advanced filtering
 export type ReactionFilterType = 
-  | "all"                    // Show all apartments
-  | "liked-by-both"          // Both users liked
-  | "liked-by-me"            // Current user liked
-  | "liked-by-partner"       // Partner liked
-  | "review"                 // Any user marked for review
-  | "rejected-by-any"        // Any user rejected
-  | "no-reaction";           // No reactions yet
+  | "all"
+  | "liked-by-both"
+  | "liked-by-me"
+  | "liked-by-partner"
+  | "review"
+  | "rejected-by-any"
+  | "no-reaction";
 
 export interface FilterTab {
   label: string;
@@ -116,35 +210,132 @@ export interface FilterTab {
   emoji: string;
 }
 
-// Sort options for apartments list
 export type SortOption = "newest" | "oldest" | "price-asc" | "price-desc";
 
-// Advanced filter state
 export interface FilterState {
   reactionFilter: ReactionFilterType;
-  roomsFilter: string | null;      // null = all, "2", "3", "4+"
+  roomsFilter: string | null;
   priceSort: SortOption;
   searchQuery: string;
 }
 
-// Form data shape used inside ApartmentModal
-// price is a string for controlled <input type="number">, parsed on submit
+// ── Form Data Types ──────────────────────────────────────────
 export interface ApartmentFormData {
   url: string;
   title: string;
   price: string;
-  rooms: string;                   // Room count for the form
+  rooms: string;
   phone: string;
   seller_name: string;
   image_url: string;
   images: string[];
   notes: string;
-  status: ApartmentStatus;         // Legacy field, kept for backward compat
+  status: ApartmentStatus;
+  // Category-specific fields stored in metadata
+  metadata: ItemMetadata;
 }
 
-// Household context types
-export interface HouseholdState {
-  householdId: string;
-  username: string;
-  partnerName: string;
+// ── Auth & Household Context ─────────────────────────────────
+export interface AuthUser {
+  id: string;
+  email: string;
 }
+
+export interface HouseholdMember {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+}
+
+export interface HouseholdContextState {
+  user: AuthUser | null;
+  profile: Profile | null;
+  household: Household | null;
+  members: HouseholdMember[];
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  hasHousehold: boolean;
+}
+
+// ── Category Configuration ───────────────────────────────────
+export interface CategoryConfig {
+  id: CategoryType;
+  label: string;
+  emoji: string;
+  titleLabel: string;
+  priceLabel: string;
+  priceUnit: string;
+  fields: CategoryFieldConfig[];
+}
+
+export interface CategoryFieldConfig {
+  key: string;
+  label: string;
+  type: "text" | "number" | "boolean" | "select";
+  options?: { value: string; label: string }[];
+  placeholder?: string;
+}
+
+// Category configurations
+export const CATEGORY_CONFIGS: Record<CategoryType, CategoryConfig> = {
+  apartment: {
+    id: "apartment",
+    label: "Apartments",
+    emoji: "🏠",
+    titleLabel: "Address",
+    priceLabel: "Monthly Rent",
+    priceUnit: "₪/month",
+    fields: [
+      { key: "floor", label: "Floor", type: "number" },
+      { key: "parking", label: "Parking", type: "boolean" },
+      { key: "balcony", label: "Balcony", type: "boolean" },
+      { key: "elevator", label: "Elevator", type: "boolean" },
+      { key: "furnished", label: "Furnished", type: "boolean" },
+      { key: "pet_friendly", label: "Pet Friendly", type: "boolean" },
+    ],
+  },
+  bride_venue: {
+    id: "bride_venue",
+    label: "Bride Venues",
+    emoji: "👰",
+    titleLabel: "Venue Name",
+    priceLabel: "Price per Night",
+    priceUnit: "₪/night",
+    fields: [
+      { key: "distance_km", label: "Distance (km)", type: "number" },
+      { key: "suites", label: "Number of Suites", type: "number" },
+      { key: "max_guests", label: "Max Guests", type: "number" },
+      { key: "catering", label: "Catering", type: "boolean" },
+      { key: "spa", label: "Spa", type: "boolean" },
+      { key: "pool", label: "Pool", type: "boolean" },
+    ],
+  },
+  car: {
+    id: "car",
+    label: "Cars",
+    emoji: "🚗",
+    titleLabel: "Car Title",
+    priceLabel: "Price",
+    priceUnit: "₪",
+    fields: [
+      { key: "make", label: "Make", type: "text", placeholder: "e.g., Toyota" },
+      { key: "model", label: "Model", type: "text", placeholder: "e.g., Camry" },
+      { key: "year", label: "Year", type: "number" },
+      { key: "mileage", label: "Mileage (km)", type: "number" },
+      { key: "fuel_type", label: "Fuel Type", type: "select", options: [
+        { value: "gasoline", label: "Gasoline" },
+        { value: "diesel", label: "Diesel" },
+        { value: "hybrid", label: "Hybrid" },
+        { value: "electric", label: "Electric" },
+      ]},
+      { key: "transmission", label: "Transmission", type: "select", options: [
+        { value: "automatic", label: "Automatic" },
+        { value: "manual", label: "Manual" },
+      ]},
+      { key: "owner_type", label: "Owner Type", type: "select", options: [
+        { value: "private", label: "Private" },
+        { value: "dealer", label: "Dealer" },
+      ]},
+    ],
+  },
+};

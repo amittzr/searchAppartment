@@ -8,30 +8,48 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { HouseholdState } from "@/types/database";
+import { useRouter } from "next/navigation";
+import { getSupabaseClient } from "@/lib/supabase-client";
+import type { 
+  Profile, 
+  Household, 
+  HouseholdMember, 
+  CategoryType,
+  CategoryConfig,
+  CATEGORY_CONFIGS
+} from "@/types/database";
+import { CATEGORY_CONFIGS as CONFIGS } from "@/types/database";
+import type { User } from "@supabase/supabase-js";
 
 // ============================================================
-// Household Context
-// Manages multi-tenant household isolation and user identity
+// Household Context - Real Auth Version
+// Manages authentication, profile, and household data
 // ============================================================
 
-const STORAGE_KEY = "apartment-tracker-household";
-
-// Default state for new users
-const DEFAULT_STATE: HouseholdState = {
-  householdId: "default-family",
-  username: "Partner 1",
-  partnerName: "Partner 2",
-};
-
-interface HouseholdContextValue extends HouseholdState {
+interface HouseholdContextValue {
+  // Auth state
+  user: User | null;
+  profile: Profile | null;
+  household: Household | null;
+  members: HouseholdMember[];
+  
+  // Loading states
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  hasHousehold: boolean;
+  
+  // Category helpers
+  category: CategoryType;
+  categoryConfig: CategoryConfig;
+  
+  // Current user info (for reactions)
+  username: string;
+  partnerName: string;
+  
   // Actions
-  setUsername: (name: string) => void;
-  setPartnerName: (name: string) => void;
-  setHouseholdId: (id: string) => void;
-  resetToDefaults: () => void;
-  // Computed
-  isConfigured: boolean;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  copyInviteCode: () => Promise<boolean>;
 }
 
 const HouseholdContext = createContext<HouseholdContextValue | null>(null);
@@ -41,73 +59,193 @@ const HouseholdContext = createContext<HouseholdContextValue | null>(null);
 // ============================================================
 
 export function HouseholdProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<HouseholdState>(DEFAULT_STATE);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const router = useRouter();
+  const supabase = getSupabaseClient();
 
-  // Load from localStorage on mount (client-side only)
-  useEffect(() => {
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [household, setHousehold] = useState<Household | null>(null);
+  const [members, setMembers] = useState<HouseholdMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch profile and household data
+  const fetchProfileData = useCallback(async (userId: string) => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Partial<HouseholdState>;
-        setState({
-          householdId: parsed.householdId || DEFAULT_STATE.householdId,
-          username: parsed.username || DEFAULT_STATE.username,
-          partnerName: parsed.partnerName || DEFAULT_STATE.partnerName,
-        });
+      // Fetch profile with household
+      const { data: profileData, error: profileError } = await (supabase
+        .from("profiles") as any)
+        .select("*")
+        .eq("id", userId)
+        .single() as { data: Profile | null; error: any };
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        return;
+      }
+
+      setProfile(profileData);
+
+      if (profileData?.household_id) {
+        // Fetch household
+        const { data: householdData, error: householdError } = await (supabase
+          .from("households") as any)
+          .select("*")
+          .eq("id", profileData.household_id)
+          .single() as { data: Household | null; error: any };
+
+        if (!householdError && householdData) {
+          setHousehold(householdData);
+        }
+
+        // Fetch household members
+        const { data: membersData, error: membersError } = await (supabase
+          .from("profiles") as any)
+          .select("id, full_name, avatar_url")
+          .eq("household_id", profileData.household_id) as { data: HouseholdMember[] | null; error: any };
+
+        if (!membersError && membersData) {
+          setMembers(membersData);
+        }
       }
     } catch (err) {
-      console.error("Failed to load household state:", err);
+      console.error("Error fetching profile data:", err);
     }
-    setIsHydrated(true);
-  }, []);
+  }, [supabase]);
 
-  // Persist to localStorage whenever state changes
+  // Initialize auth state
   useEffect(() => {
-    if (isHydrated) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (err) {
-        console.error("Failed to save household state:", err);
+    const initAuth = async () => {
+      setIsLoading(true);
+      
+      // Get current session
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        setUser(currentUser);
+        await fetchProfileData(currentUser.id);
       }
-    }
-  }, [state, isHydrated]);
+      
+      setIsLoading(false);
+    };
+
+    initAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          setUser(session.user);
+          await fetchProfileData(session.user.id);
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+          setProfile(null);
+          setHousehold(null);
+          setMembers([]);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase, fetchProfileData]);
+
+  // Subscribe to realtime changes for household members
+  useEffect(() => {
+    if (!household?.id) return;
+
+    const channel = supabase
+      .channel(`household-${household.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+          filter: `household_id=eq.${household.id}`,
+        },
+        async () => {
+          // Refresh members list
+          const { data: membersData } = await (supabase
+            .from("profiles") as any)
+            .select("id, full_name, avatar_url")
+            .eq("household_id", household.id) as { data: HouseholdMember[] | null };
+
+          if (membersData) {
+            setMembers(membersData);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, household?.id]);
 
   // Actions
-  const setUsername = useCallback((name: string) => {
-    setState((prev) => ({ ...prev, username: name.trim() || DEFAULT_STATE.username }));
-  }, []);
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  }, [supabase, router]);
 
-  const setPartnerName = useCallback((name: string) => {
-    setState((prev) => ({ ...prev, partnerName: name.trim() || DEFAULT_STATE.partnerName }));
-  }, []);
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfileData(user.id);
+    }
+  }, [user, fetchProfileData]);
 
-  const setHouseholdId = useCallback((id: string) => {
-    setState((prev) => ({ ...prev, householdId: id.trim() || DEFAULT_STATE.householdId }));
-  }, []);
+  const copyInviteCode = useCallback(async (): Promise<boolean> => {
+    if (household?.invite_code) {
+      try {
+        await navigator.clipboard.writeText(household.invite_code);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }, [household?.invite_code]);
 
-  const resetToDefaults = useCallback(() => {
-    setState(DEFAULT_STATE);
-  }, []);
+  // Computed values
+  const isAuthenticated = !!user;
+  const hasHousehold = !!household;
+  const category: CategoryType = household?.category || "apartment";
+  const categoryConfig = CONFIGS[category];
 
-  // Check if user has customized their settings
-  const isConfigured =
-    state.username !== DEFAULT_STATE.username ||
-    state.partnerName !== DEFAULT_STATE.partnerName ||
-    state.householdId !== DEFAULT_STATE.householdId;
+  // User names for reactions
+  const username = profile?.full_name || "You";
+  const partner = members.find((m) => m.id !== user?.id);
+  const partnerName = partner?.full_name || "Partner";
 
   const value: HouseholdContextValue = {
-    ...state,
-    setUsername,
-    setPartnerName,
-    setHouseholdId,
-    resetToDefaults,
-    isConfigured,
+    user,
+    profile,
+    household,
+    members,
+    isLoading,
+    isAuthenticated,
+    hasHousehold,
+    category,
+    categoryConfig,
+    username,
+    partnerName,
+    signOut,
+    refreshProfile,
+    copyInviteCode,
   };
 
-  // Prevent hydration mismatch by rendering children only after hydration
-  if (!isHydrated) {
-    return null;
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 via-white to-slate-100">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Users, User, Home, RotateCcw } from "lucide-react";
+import { X, Users, User, Home, Copy, Check, LogOut, Pencil, Save, Loader2 } from "lucide-react";
 import { useHousehold } from "@/contexts/HouseholdContext";
+import { getSupabaseClient } from "@/lib/supabase-client";
 
 // ============================================================
 // Household Settings Modal
-// Allows users to configure their identity and household
+// Shows household info and allows copying/editing invite code
 // ============================================================
 
 interface HouseholdSettingsModalProps {
@@ -19,35 +20,37 @@ export default function HouseholdSettingsModal({
   onClose,
 }: HouseholdSettingsModalProps) {
   const {
-    username,
-    partnerName,
-    householdId,
-    setUsername,
-    setPartnerName,
-    setHouseholdId,
-    resetToDefaults,
+    profile,
+    household,
+    members,
+    categoryConfig,
+    copyInviteCode,
+    signOut,
+    refreshProfile,
   } = useHousehold();
 
-  // Local form state
-  const [localUsername, setLocalUsername] = useState(username);
-  const [localPartnerName, setLocalPartnerName] = useState(partnerName);
-  const [localHouseholdId, setLocalHouseholdId] = useState(householdId);
-
-  // Sync local state when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setLocalUsername(username);
-      setLocalPartnerName(partnerName);
-      setLocalHouseholdId(householdId);
-    }
-  }, [isOpen, username, partnerName, householdId]);
+  const [copied, setCopied] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  
+  // Edit invite code state
+  const [isEditingCode, setIsEditingCode] = useState(false);
+  const [newInviteCode, setNewInviteCode] = useState("");
+  const [savingCode, setSavingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
 
   // Close on Escape key
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (isEditingCode) {
+          setIsEditingCode(false);
+          setCodeError(null);
+        } else {
+          onClose();
+        }
+      }
     },
-    [onClose]
+    [onClose, isEditingCode]
   );
 
   useEffect(() => {
@@ -61,16 +64,78 @@ export default function HouseholdSettingsModal({
     };
   }, [isOpen, handleKeyDown]);
 
-  const handleSave = () => {
-    setUsername(localUsername);
-    setPartnerName(localPartnerName);
-    setHouseholdId(localHouseholdId);
-    onClose();
+  const handleCopyInviteCode = async () => {
+    const success = await copyInviteCode();
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
-  const handleReset = () => {
-    resetToDefaults();
-    onClose();
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+    } catch {
+      setSigningOut(false);
+    }
+  };
+
+  const startEditingCode = () => {
+    setNewInviteCode(household?.invite_code || "");
+    setIsEditingCode(true);
+    setCodeError(null);
+  };
+
+  const cancelEditingCode = () => {
+    setIsEditingCode(false);
+    setNewInviteCode("");
+    setCodeError(null);
+  };
+
+  const saveInviteCode = async () => {
+    if (!household) return;
+    
+    const cleanCode = newInviteCode.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    if (cleanCode.length < 4) {
+      setCodeError("Code must be at least 4 characters");
+      return;
+    }
+    
+    if (cleanCode === household.invite_code) {
+      setIsEditingCode(false);
+      return;
+    }
+
+    setSavingCode(true);
+    setCodeError(null);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await (supabase
+        .from("households") as any)
+        .update({ invite_code: cleanCode })
+        .eq("id", household.id);
+
+      if (error) {
+        if (error.message.includes('duplicate') || error.message.includes('unique')) {
+          setCodeError("This code is already taken");
+        } else {
+          setCodeError(error.message);
+        }
+        return;
+      }
+
+      // Refresh to get updated household data
+      await refreshProfile();
+      setIsEditingCode(false);
+      setNewInviteCode("");
+    } catch {
+      setCodeError("Failed to update code");
+    } finally {
+      setSavingCode(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -101,7 +166,7 @@ export default function HouseholdSettingsModal({
               <h2 id="settings-title" className="text-lg font-bold text-slate-900">
                 Household Settings
               </h2>
-              <p className="text-sm text-slate-400">Configure your profile</p>
+              <p className="text-sm text-slate-400">Manage your household</p>
             </div>
           </div>
           <button
@@ -116,67 +181,156 @@ export default function HouseholdSettingsModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <div className="flex flex-col gap-5">
-            {/* Your Name */}
-            <div className="flex flex-col gap-1.5">
-              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                <User className="w-4 h-4 text-slate-400" />
-                Your Name
-              </label>
-              <input
-                type="text"
-                value={localUsername}
-                onChange={(e) => setLocalUsername(e.target.value)}
-                placeholder="e.g., Amit"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white placeholder:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent hover:border-slate-300"
-              />
-              <p className="text-xs text-slate-400">
-                This name appears on your reactions
-              </p>
+            {/* Your Profile */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center">
+                  <User className="w-5 h-5 text-brand-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900">{profile?.full_name}</p>
+                  <p className="text-sm text-slate-500">{profile?.email}</p>
+                </div>
+              </div>
             </div>
 
-            {/* Partner Name */}
-            <div className="flex flex-col gap-1.5">
-              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                <User className="w-4 h-4 text-slate-400" />
-                Partner's Name
-              </label>
-              <input
-                type="text"
-                value={localPartnerName}
-                onChange={(e) => setLocalPartnerName(e.target.value)}
-                placeholder="e.g., Noa"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white placeholder:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent hover:border-slate-300"
-              />
-              <p className="text-xs text-slate-400">
-                Your partner's name for their reactions
-              </p>
-            </div>
+            {/* Household Info */}
+            {household && (
+              <div className="p-4 rounded-xl bg-brand-50 border border-brand-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">{categoryConfig.emoji}</span>
+                  <div>
+                    <p className="font-medium text-brand-900">{household.name}</p>
+                    <p className="text-sm text-brand-600">{categoryConfig.label}</p>
+                  </div>
+                </div>
+                
+                {/* Invite Code */}
+                <div className="mt-4 pt-4 border-t border-brand-200">
+                  <p className="text-xs font-medium text-brand-700 uppercase tracking-wide mb-2">
+                    Invite Code
+                  </p>
+                  
+                  {isEditingCode ? (
+                    // Edit mode
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newInviteCode}
+                          onChange={(e) => {
+                            setNewInviteCode(e.target.value.toLowerCase());
+                            setCodeError(null);
+                          }}
+                          placeholder="Enter new code"
+                          maxLength={20}
+                          autoFocus
+                          className="flex-1 px-3 py-2 rounded-lg bg-white border border-brand-300 text-lg font-mono font-bold text-brand-700 tracking-wider focus:outline-none focus:ring-2 focus:ring-brand-400"
+                        />
+                        <button
+                          onClick={saveInviteCode}
+                          disabled={savingCode}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-all"
+                        >
+                          {savingCode ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={cancelEditingCode}
+                          disabled={savingCode}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:opacity-50 transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {codeError && (
+                        <p className="text-xs text-red-600">{codeError}</p>
+                      )}
+                      <p className="text-xs text-brand-600">
+                        Letters and numbers only, at least 4 characters
+                      </p>
+                    </div>
+                  ) : (
+                    // Display mode
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 px-3 py-2 rounded-lg bg-white border border-brand-200 text-lg font-mono font-bold text-brand-700 tracking-wider">
+                        {household.invite_code}
+                      </code>
+                      <button
+                        onClick={startEditingCode}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all"
+                        title="Edit invite code"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={handleCopyInviteCode}
+                        className={`
+                          flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all
+                          ${copied 
+                            ? "bg-green-100 text-green-700 border border-green-300" 
+                            : "bg-brand-600 text-white hover:bg-brand-700"
+                          }
+                        `}
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                  
+                  {!isEditingCode && (
+                    <p className="text-xs text-brand-600 mt-2">
+                      Share this code with your partner so they can join your household
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
-            {/* Household ID */}
-            <div className="flex flex-col gap-1.5">
-              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                <Home className="w-4 h-4 text-slate-400" />
-                Household ID
-              </label>
-              <input
-                type="text"
-                value={localHouseholdId}
-                onChange={(e) => setLocalHouseholdId(e.target.value)}
-                placeholder="e.g., amit-noa-2024"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white placeholder:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent hover:border-slate-300"
-              />
-              <p className="text-xs text-slate-400">
-                Shared ID to sync with your partner. Use the same ID on both devices.
-              </p>
-            </div>
-
-            {/* Info box */}
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-              <p className="text-sm text-amber-700">
-                <strong>Tip:</strong> Share the same Household ID with your partner 
-                so you both see the same apartments and can react to them together.
-              </p>
-            </div>
+            {/* Members List */}
+            {members.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-slate-700 mb-3">
+                  Household Members ({members.length})
+                </p>
+                <div className="flex flex-col gap-2">
+                  {members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+                        <User className="w-4 h-4 text-slate-500" />
+                      </div>
+                      <span className="font-medium text-slate-700">{member.full_name}</span>
+                      {member.id === profile?.id && (
+                        <span className="ml-auto text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                          You
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {members.length === 1 && (
+                  <p className="text-sm text-amber-600 mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                    Share the invite code above with your partner to start collaborating!
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -184,28 +338,20 @@ export default function HouseholdSettingsModal({
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100">
           <button
             type="button"
-            onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
           >
-            <RotateCcw className="w-4 h-4" />
-            Reset
+            <LogOut className="w-4 h-4" />
+            {signingOut ? "Signing out..." : "Sign Out"}
           </button>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-brand-600 hover:to-brand-800 active:scale-95 transition-all duration-150"
-            >
-              Save
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors"
+          >
+            Done
+          </button>
         </div>
       </div>
     </div>

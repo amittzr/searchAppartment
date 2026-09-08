@@ -18,16 +18,19 @@ import {
   Expand,
   Images,
   BedDouble,
+  Car,
+  Fuel,
+  Calendar,
+  Gauge,
 } from "lucide-react";
-import type { Apartment, ReactionStatus } from "@/types/database";
+import type { Apartment, ReactionStatus, CategoryType, ItemMetadata, CarMetadata, BrideVenueMetadata, ApartmentMetadata } from "@/types/database";
+import { useHousehold } from "@/contexts/HouseholdContext";
 
 interface ApartmentCardProps {
   apartment: Apartment;
-  username: string;
-  partnerName: string;
   onEdit: (apartment: Apartment) => void;
   onDelete: (id: string) => void;
-  onReactionChange: (id: string, username: string, reaction: ReactionStatus | null) => void;
+  onReactionChange: (id: string, reaction: ReactionStatus | null) => void;
 }
 
 // ── Reaction configuration ───────────────────────────────────────────────────
@@ -93,14 +96,24 @@ function formatPrice(price: number): string {
   return price.toLocaleString("he-IL");
 }
 
+// Get price unit based on category
+function getPriceUnit(category: CategoryType): string {
+  switch (category) {
+    case "apartment": return "/mo";
+    case "bride_venue": return "/night";
+    case "car": return "";
+    default: return "";
+  }
+}
+
 export default function ApartmentCard({
   apartment,
-  username,
-  partnerName,
   onEdit,
   onDelete,
   onReactionChange,
 }: ApartmentCardProps) {
+  const { username, partnerName, members, category, categoryConfig } = useHousehold();
+  
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
@@ -108,18 +121,20 @@ export default function ApartmentCard({
   const myReaction = apartment.reactions?.[username] || null;
   const partnerReaction = apartment.reactions?.[partnerName] || null;
   
-  // Determine card border color based on consensus
-  const bothLiked = myReaction === "liked" && partnerReaction === "liked";
+  // Check if all members liked (match)
+  const isMatch = members.length >= 2 && members.every(m => apartment.reactions?.[m.full_name] === "liked");
   const anyRejected = myReaction === "rejected" || partnerReaction === "rejected";
-  const cardBorderClass = bothLiked 
+  
+  const cardBorderClass = isMatch 
     ? "border-green-300 ring-2 ring-green-100" 
     : anyRejected 
       ? "border-slate-200 opacity-60 hover:opacity-100" 
       : "border-slate-200";
   
   const source = detectSource(apartment.url);
+  const priceUnit = getPriceUnit(category);
   
-  // Get all images - use images array if available, otherwise fallback to single image_url
+  // Get all images
   const allImages = apartment.images?.length 
     ? apartment.images 
     : apartment.image_url 
@@ -127,8 +142,7 @@ export default function ApartmentCard({
       : [];
 
   const handleReactionToggle = (reaction: ReactionStatus) => {
-    // Clicking an already-active reaction removes it (sets to null)
-    onReactionChange(apartment.id, username, myReaction === reaction ? null : reaction);
+    onReactionChange(apartment.id, myReaction === reaction ? null : reaction);
   };
 
   const handlePrevImage = (e: React.MouseEvent) => {
@@ -143,10 +157,70 @@ export default function ApartmentCard({
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
-    setCurrentImageIndex(0); // Reset to first image when toggling
+    setCurrentImageIndex(0);
   };
 
-  // ── Expanded View (Modal-like overlay) ──────────────────────────────────────
+  // ── Category-specific metadata display ──────────────────────────────────────
+  const renderCategoryBadges = (expanded = false) => {
+    const metadata = apartment.metadata as ItemMetadata;
+    const badges: React.ReactNode[] = [];
+
+    // Rooms badge for apartments and venues
+    if ((category === "apartment" || category === "bride_venue") && apartment.rooms) {
+      badges.push(
+        <span key="rooms" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-purple-100 text-purple-700 font-semibold border border-purple-200`}>
+          <BedDouble className={expanded ? "w-4 h-4" : "w-3 h-3"} />
+          {apartment.rooms} {category === "bride_venue" ? "suites" : "rooms"}
+        </span>
+      );
+    }
+
+    // Car-specific badges
+    if (category === "car" && metadata) {
+      const carMeta = metadata as CarMetadata;
+      if (carMeta.year) {
+        badges.push(
+          <span key="year" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-blue-100 text-blue-700 font-semibold border border-blue-200`}>
+            <Calendar className={expanded ? "w-4 h-4" : "w-3 h-3"} />
+            {carMeta.year}
+          </span>
+        );
+      }
+      if (carMeta.mileage) {
+        badges.push(
+          <span key="mileage" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-green-100 text-green-700 font-semibold border border-green-200`}>
+            <Gauge className={expanded ? "w-4 h-4" : "w-3 h-3"} />
+            {(carMeta.mileage / 1000).toFixed(0)}K km
+          </span>
+        );
+      }
+      if (carMeta.fuel_type) {
+        badges.push(
+          <span key="fuel" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-amber-100 text-amber-700 font-semibold border border-amber-200`}>
+            <Fuel className={expanded ? "w-4 h-4" : "w-3 h-3"} />
+            {carMeta.fuel_type}
+          </span>
+        );
+      }
+    }
+
+    // Bride venue distance
+    if (category === "bride_venue" && metadata) {
+      const venueMeta = metadata as BrideVenueMetadata;
+      if (venueMeta.distance_km) {
+        badges.push(
+          <span key="distance" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-teal-100 text-teal-700 font-semibold border border-teal-200`}>
+            <MapPin className={expanded ? "w-4 h-4" : "w-3 h-3"} />
+            {venueMeta.distance_km} km
+          </span>
+        );
+      }
+    }
+
+    return badges;
+  };
+
+  // ── Expanded View ──────────────────────────────────────────────────────────
   if (isExpanded) {
     return (
       <>
@@ -160,13 +234,16 @@ export default function ApartmentCard({
         <div className="fixed inset-4 sm:inset-8 lg:inset-16 z-50 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-up">
           {/* Header */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Category emoji */}
+              <span className="text-lg">{categoryConfig.emoji}</span>
+              
               {/* Dual reaction badges */}
               <ReactionBadge name={username} reaction={myReaction} isMe />
               <ReactionBadge name={partnerName} reaction={partnerReaction} />
-              {bothLiked && (
-                <span className="px-2.5 py-1 rounded-lg bg-green-100 text-green-700 text-xs font-semibold border border-green-200">
-                  ✨ Match!
+              {isMatch && (
+                <span className="px-2.5 py-1 rounded-lg bg-green-100 text-green-700 text-xs font-semibold border border-green-200 animate-pulse">
+                  💕 Match!
                 </span>
               )}
               {source && (
@@ -174,12 +251,7 @@ export default function ApartmentCard({
                   {source}
                 </span>
               )}
-              {apartment.rooms && (
-                <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-xs font-semibold border border-purple-200">
-                  <BedDouble className="w-3.5 h-3.5" />
-                  {apartment.rooms} rooms
-                </span>
-              )}
+              {renderCategoryBadges(true)}
             </div>
             <button
               onClick={toggleExpanded}
@@ -206,7 +278,6 @@ export default function ApartmentCard({
                       priority
                     />
                     
-                    {/* Navigation arrows */}
                     {allImages.length > 1 && (
                       <>
                         <button
@@ -224,7 +295,6 @@ export default function ApartmentCard({
                           <ChevronRight className="w-6 h-6" />
                         </button>
                         
-                        {/* Image counter */}
                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-black/60 text-white text-sm font-medium">
                           {currentImageIndex + 1} / {allImages.length}
                         </div>
@@ -233,7 +303,11 @@ export default function ApartmentCard({
                   </div>
                 ) : (
                   <div className="aspect-[4/3] lg:h-full flex flex-col items-center justify-center text-slate-500">
-                    <MapPin className="w-12 h-12 mb-2" strokeWidth={1.5} />
+                    {category === "car" ? (
+                      <Car className="w-12 h-12 mb-2" strokeWidth={1.5} />
+                    ) : (
+                      <MapPin className="w-12 h-12 mb-2" strokeWidth={1.5} />
+                    )}
                     <span className="text-sm font-medium">No images</span>
                   </div>
                 )}
@@ -271,25 +345,22 @@ export default function ApartmentCard({
 
               {/* Details Panel */}
               <div className="lg:w-1/2 xl:w-2/5 p-4 sm:p-6 flex flex-col gap-5">
-                {/* Price and Rooms */}
+                {/* Price */}
                 <div className="flex items-baseline gap-3 flex-wrap">
                   <span className="text-3xl font-bold text-slate-900">
                     ₪{formatPrice(apartment.price)}
                   </span>
-                  <span className="text-slate-400 text-sm">/month</span>
-                  {apartment.rooms && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-sm font-semibold">
-                      <BedDouble className="w-4 h-4" />
-                      {apartment.rooms} rooms
-                    </span>
-                  )}
+                  {priceUnit && <span className="text-slate-400 text-sm">{priceUnit}</span>}
                 </div>
 
-                {/* Title/Address */}
-                <div>
-                  <h2 className="text-lg font-semibold text-slate-900 leading-snug">
-                    {apartment.title}
-                  </h2>
+                {/* Title */}
+                <h2 className="text-lg font-semibold text-slate-900 leading-snug">
+                  {apartment.title}
+                </h2>
+
+                {/* Category-specific details */}
+                <div className="flex flex-wrap gap-2">
+                  {renderCategoryBadges(true)}
                 </div>
 
                 {/* Contact Info */}
@@ -329,7 +400,7 @@ export default function ApartmentCard({
                   </div>
                 )}
 
-                {/* Dual Reaction Selectors */}
+                {/* Reaction Selector */}
                 <div className="flex flex-col gap-3">
                   <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Your Reaction</h3>
                   <div className="flex gap-2">
@@ -353,9 +424,9 @@ export default function ApartmentCard({
                     ))}
                   </div>
                   
-                  {/* Partner's reaction display */}
+                  {/* Partner's reaction */}
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-slate-400">{partnerName}'s reaction:</span>
+                    <span className="text-xs text-slate-400">{partnerName}&apos;s reaction:</span>
                     {partnerReaction ? (
                       <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${REACTION_CONFIG[partnerReaction].bgClass} ${REACTION_CONFIG[partnerReaction].textClass}`}>
                         {REACTION_CONFIG[partnerReaction].emoji} {REACTION_CONFIG[partnerReaction].label}
@@ -366,7 +437,6 @@ export default function ApartmentCard({
                   </div>
                 </div>
 
-                {/* Spacer */}
                 <div className="flex-1" />
 
                 {/* Action Buttons */}
@@ -421,7 +491,7 @@ export default function ApartmentCard({
         ${cardBorderClass}
       `}
     >
-      {/* ── Hero Image ─────────────────────────────────────────────────────── */}
+      {/* Hero Image */}
       <div 
         className="relative w-full h-44 bg-slate-100 overflow-hidden flex-shrink-0 cursor-pointer"
         onClick={toggleExpanded}
@@ -438,7 +508,6 @@ export default function ApartmentCard({
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
-            {/* Image count badge */}
             {allImages.length > 1 && (
               <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-white text-xs font-medium">
                 <Images className="w-3.5 h-3.5" />
@@ -447,9 +516,12 @@ export default function ApartmentCard({
             )}
           </>
         ) : (
-          // Placeholder when no image is provided
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
-            <MapPin className="w-10 h-10 mb-1" strokeWidth={1.5} />
+            {category === "car" ? (
+              <Car className="w-10 h-10 mb-1" strokeWidth={1.5} />
+            ) : (
+              <MapPin className="w-10 h-10 mb-1" strokeWidth={1.5} />
+            )}
             <span className="text-xs font-medium">No image</span>
           </div>
         )}
@@ -458,11 +530,11 @@ export default function ApartmentCard({
         <div className="absolute bottom-2 left-2 flex items-center gap-1">
           <span className="px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-white text-sm font-bold tabular-nums">
             ₪{formatPrice(apartment.price)}
-            <span className="text-xs font-normal opacity-80">/mo</span>
+            {priceUnit && <span className="text-xs font-normal opacity-80">{priceUnit}</span>}
           </span>
         </div>
 
-        {/* Source tag (Yad2 / Facebook) */}
+        {/* Source tag */}
         {source && (
           <div className="absolute top-2 right-2">
             <span className="px-2 py-0.5 rounded-md bg-brand-600/90 backdrop-blur-sm text-white text-xs font-semibold">
@@ -478,10 +550,10 @@ export default function ApartmentCard({
         </div>
 
         {/* Match indicator */}
-        {bothLiked && (
+        {isMatch && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <span className="px-3 py-1.5 rounded-full bg-green-500 text-white text-xs font-bold shadow-lg animate-pulse">
-              ✨ Match!
+              💕 Match!
             </span>
           </div>
         )}
@@ -496,23 +568,19 @@ export default function ApartmentCard({
         </div>
       </div>
 
-      {/* ── Card Body ──────────────────────────────────────────────────────── */}
+      {/* Card Body */}
       <div className="flex flex-col flex-1 p-4 gap-3">
-
-        {/* Title / Address with Rooms badge */}
+        {/* Title with category-specific badges */}
         <div className="flex items-start justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug flex-1">
             {apartment.title}
           </h2>
-          {apartment.rooms && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-xs font-semibold flex-shrink-0">
-              <BedDouble className="w-3 h-3" />
-              {apartment.rooms}
-            </span>
-          )}
+          <div className="flex flex-wrap gap-1 flex-shrink-0">
+            {renderCategoryBadges()}
+          </div>
         </div>
 
-        {/* Seller name and phone */}
+        {/* Seller and phone */}
         <div className="flex flex-col gap-1.5">
           {apartment.seller_name && (
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -524,7 +592,6 @@ export default function ApartmentCard({
             <a
               href={`tel:${apartment.phone}`}
               className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-600 transition-colors w-fit"
-              aria-label={`Call ${apartment.phone}`}
             >
               <Phone className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2} />
               <span className="font-medium">{apartment.phone}</span>
@@ -532,7 +599,7 @@ export default function ApartmentCard({
           )}
         </div>
 
-        {/* Shared notes */}
+        {/* Notes */}
         {apartment.notes && (
           <div className="flex items-start gap-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg px-2.5 py-2">
             <StickyNote className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-400" strokeWidth={2} />
@@ -540,12 +607,10 @@ export default function ApartmentCard({
           </div>
         )}
 
-        {/* Spacer pushes action row to the bottom */}
         <div className="flex-1" />
 
-        {/* ── Action Row ───────────────────────────────────────────────────── */}
+        {/* Action Row */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
-
           {/* Reaction toggle buttons */}
           <div className="flex items-center gap-1.5">
             {REACTION_ACTIONS.map(({ reaction, icon, label, activeClass }) => (
@@ -569,7 +634,7 @@ export default function ApartmentCard({
             ))}
           </div>
 
-          {/* Right: open link, edit, delete */}
+          {/* Right actions */}
           <div className="flex items-center gap-1.5">
             {apartment.url && (
               <a
@@ -586,7 +651,7 @@ export default function ApartmentCard({
 
             <button
               onClick={() => onEdit(apartment)}
-              aria-label="Edit apartment"
+              aria-label="Edit"
               title="Edit"
               className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-brand-600 hover:border-brand-300 bg-white transition-colors"
             >
@@ -595,7 +660,7 @@ export default function ApartmentCard({
 
             <button
               onClick={() => onDelete(apartment.id)}
-              aria-label="Delete apartment"
+              aria-label="Delete"
               title="Delete"
               className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 bg-white transition-colors"
             >
@@ -619,7 +684,6 @@ interface ReactionBadgeProps {
 
 function ReactionBadge({ name, reaction, isMe, compact }: ReactionBadgeProps) {
   if (!reaction) {
-    // No reaction yet
     return compact ? null : (
       <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-xs font-medium border border-slate-200">
         {isMe ? "You" : name}: 🏠
