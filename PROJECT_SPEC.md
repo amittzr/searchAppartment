@@ -11,7 +11,7 @@
 - **Production URL:** https://search-appartment.vercel.app *(update if domain changes)*
 - **Repository:** https://github.com/amittzr/searchAppartment
 - **Database:** Supabase — project `khozzonoqctwbzsowulv` (ap-southeast-1, Singapore)
-- **Current Version:** v2.0 — September 2026
+- **Current Version:** v2.1 — September 2026
 
 ---
 
@@ -52,21 +52,23 @@ src/
 ├── components/
 │   ├── Navbar.tsx            ← Sticky header: household info, user menu, add button
 │   ├── FilterToolbar.tsx     ← Advanced filters: search, rooms, sort, reactions
-│   ├── ApartmentCard.tsx     ← Card: image, price, reactions, category badges
-│   ├── ApartmentModal.tsx    ← Add/Edit form with dynamic category fields
+│   ├── ApartmentCard.tsx     ← Card: image, price, reactions, NEW badge, category badges
+│   ├── ApartmentModal.tsx    ← Add/Edit form with dynamic fields, notes thread, image upload
 │   ├── CategoryFields.tsx    ← Dynamic form fields based on category type
+│   ├── NotesThread.tsx       ← Chat-style threaded notes component
 │   ├── MapView.tsx           ← Interactive map with apartment markers
 │   ├── HouseholdSettingsModal.tsx ← Household info, editable invite code, members
 │   └── LoadingSkeleton.tsx   ← Shimmer placeholder grid
 ├── contexts/
 │   └── HouseholdContext.tsx  ← Auth state, profile, household, members (Supabase)
 ├── hooks/
-│   ├── useApartments.ts      ← CRUD + reactions + household scoping + Realtime
-│   └── useYad2AutoFill.ts    ← Auto-fill hook for Yad2 URLs
+│   ├── useApartments.ts      ← CRUD + reactions + markAsViewed + household scoping + Realtime
+│   └── useYad2AutoFill.ts    ← Auto-fill hook for Yad2 + yad-il URLs
 ├── lib/
 │   ├── supabase-client.ts    ← Browser Supabase client (singleton)
 │   ├── supabase-server.ts    ← Server Components Supabase client
 │   ├── supabase-middleware.ts ← Middleware Supabase client (session refresh)
+│   ├── upload-images.ts      ← Supabase Storage image upload utility
 │   └── geocode.ts            ← Nominatim geocoding utility
 ├── types/
 │   └── database.ts           ← Types: Apartment, Profile, Household, CategoryConfig
@@ -117,7 +119,8 @@ src/
 | `images` | jsonb | Array of all image URLs |
 | `reactions` | jsonb | Per-user reactions: `{"Amit": "loved", "Noa": "liked"}` |
 | `metadata` | jsonb | Category-specific fields (see below) |
-| `notes` | text | Shared notes |
+| `notes` | jsonb | Threaded notes: `[{userId, userName, text, createdAt}]` |
+| `viewed_by` | jsonb | Array of user IDs who have seen this item |
 | `latitude` | double precision | Map coordinates |
 | `longitude` | double precision | Map coordinates |
 | `status` | text | DEPRECATED — kept for backward compat |
@@ -307,6 +310,44 @@ AS $$ SELECT household_id FROM public.profiles WHERE id = auth.uid() $$;
 - [x] **Match detection** — both partners ❤️ = Match! highlight
 - [x] **Reaction counts** — see totals per item
 
+### v2.1 — Scraper, Notes, Images, Read Receipts
+
+#### Yad2 Scraper Improvements
+- [x] **yad-il.co.il support** — accepts both `yad2.co.il` and `yad-il.co.il` domains
+- [x] **Multi-query scan** — scans all `dehydratedState.queries[]`, not just index 0 (fixes yad-il data)
+- [x] **Rooms fallback chain** — checks `infoBar[]`, `additional_info`, `details`, regex scan
+- [x] **Multi-endpoint phone** — tries 3 customer API endpoints for phone retrieval
+- [x] **Referer fix** — always sends `yad2.co.il` as Referer to gateway API
+
+#### Bookmarklet Improvements
+- [x] **yad-il.co.il support** — bookmarklet now works on both Yad2 domains
+- [x] **Multi-query scan** — same fix as server: scans all queries to find listing data
+- [x] **Graceful fallback** — sends `autoscrape=true` when client-side parse fails; app auto-triggers server scraper
+- [x] **Dynamic APP_URL** — setup page generates bookmarklet pointing to current host (localhost or Vercel)
+- [x] **Phone hint** — "click Show phone first" hint in modal phone field
+
+#### Threaded Notes
+- [x] **Schema migration** — `notes` column converted from `text` to `jsonb` array
+- [x] **Note structure** — `[{userId, userName, text, createdAt}]`
+- [x] **NotesThread component** — chat-style bubbles, author attribution, timestamps
+- [x] **Compact view** — last note preview with author on card
+- [x] **Compose area** — textarea + send button, Ctrl+Enter shortcut
+- [x] **Search support** — FilterToolbar searches inside note text entries
+
+#### Native Image Uploads
+- [x] **Supabase Storage bucket** — `item-images` with public read, auth write policies
+- [x] **Upload utility** — `src/lib/upload-images.ts` with validation (5MB, type check)
+- [x] **Hybrid support** — mix external URLs (Yad2 scraper) + uploaded files in same array
+- [x] **Image preview strip** — thumbnails with hero selector and remove button
+- [x] **Upload progress** — loading state and per-file error messages
+
+#### Read Receipts (New Post Indicator)
+- [x] **Schema migration** — `viewed_by jsonb` column added to apartments
+- [x] **Auto-mark creator** — creator's ID added to `viewed_by` on insert
+- [x] **NEW badge** — pulsing ✨ NEW badge on cards not yet seen by current user
+- [x] **Mark on interact** — fires `markAsViewed` when user opens card or reacts
+- [x] **GIN index** — fast containment queries on `viewed_by` array
+
 ---
 
 ## SQL Migrations
@@ -327,6 +368,21 @@ Key operations:
 Located at: `supabase/fix-rls-recursion.sql`
 
 Fixes infinite recursion in RLS policies by using SECURITY DEFINER function.
+
+### v2.1 Threaded Notes
+Located at: `supabase/migration-v2.1-threaded-notes.sql`
+
+Converts `apartments.notes` from `text` to `jsonb` array, migrates existing notes to thread format.
+
+### v2.1 Supabase Storage
+Located at: `supabase/setup-storage.sql`
+
+Creates `item-images` bucket with public read and authenticated write/delete policies.
+
+### v2.1 Read Receipts
+Located at: `supabase/migration-v2.1-viewed-by.sql`
+
+Adds `viewed_by jsonb` column with GIN index, back-fills existing rows as seen by all household members.
 
 ---
 
@@ -372,7 +428,7 @@ Push to `main` branch → Vercel auto-deploys.
 - [ ] Leave household option
 
 ### v2.2 — Collaboration
-- [ ] Comments thread per item
+- [ ] Comments thread per item — ✅ Done in v2.1 as threaded notes
 - [ ] Push notifications for new items
 - [ ] Activity log
 

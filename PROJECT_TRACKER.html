@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GroupPick — Project Tracker v2.0</title>
+  <title>GroupPick — Project Tracker v2.1</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.6; padding: 2rem 1rem; }
@@ -51,7 +51,7 @@
     <p>Collaborative decision-making app for couples — track apartments, venues, cars & more together</p>
     <div class="header-meta">
       <span class="badge">✅ Live</span>
-      <span class="badge badge-new">v2.0</span>
+      <span class="badge badge-new">v2.1</span>
       <span class="badge">Next.js 15</span>
       <span class="badge">Supabase Auth</span>
       <span class="badge">Multi-Category</span>
@@ -59,40 +59,44 @@
     </div>
   </div>
 
-  <!-- What's New in v2.0 -->
+  <!-- What's New in v2.1 -->
   <div class="highlight-box">
-    <h3>🚀 What's New in v2.0</h3>
+    <h3>🚀 What's New in v2.1</h3>
     <div class="two-col">
       <div>
-        <strong>Real Authentication</strong>
+        <strong>Scraper & Bookmarklet</strong>
         <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
-          <li>Supabase Auth with email/password</li>
-          <li>Individual user accounts</li>
-          <li>Invite password gate for signups</li>
+          <li>yad-il.co.il full support</li>
+          <li>Multi-query scan (fixes yad-il data)</li>
+          <li>Dynamic APP_URL in setup page</li>
+          <li>Graceful autoscrape fallback</li>
         </ul>
       </div>
       <div>
-        <strong>Household System</strong>
+        <strong>Threaded Notes</strong>
         <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
-          <li>Create or join households</li>
-          <li>Custom invite codes</li>
-          <li>Member management</li>
+          <li>Chat-style bubbles with attribution</li>
+          <li>Author + timestamp per note</li>
+          <li>Compact preview on cards</li>
+          <li>JSONB array in database</li>
         </ul>
       </div>
       <div>
-        <strong>Multi-Category</strong>
+        <strong>Native Image Uploads</strong>
         <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
-          <li>🏠 Apartments</li>
-          <li>👰 Wedding Venues</li>
-          <li>🚗 Cars</li>
+          <li>Supabase Storage bucket</li>
+          <li>Mix URLs + uploaded files</li>
+          <li>5MB limit, JPEG/PNG/WebP</li>
+          <li>Hero selector + remove</li>
         </ul>
       </div>
       <div>
-        <strong>Enhanced Reactions</strong>
+        <strong>Read Receipts</strong>
         <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
-          <li>❤️ Loved / 👍 Liked</li>
-          <li>👎 Disliked / ❌ Veto</li>
-          <li>💕 Match detection</li>
+          <li>✨ NEW badge on unseen items</li>
+          <li>Auto-mark on open or react</li>
+          <li>viewed_by JSONB column</li>
+          <li>GIN index for performance</li>
         </ul>
       </div>
     </div>
@@ -123,6 +127,52 @@
         <tr><td>Deployment</td><td>Vercel</td><td>—</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔧 Features v2.1 — Scraper & Bookmarklet</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>yad-il.co.il support</strong> — bookmarklet and scraper accept both Yad2 domains</li>
+      <li class="new"><span>✅</span> <strong>Multi-query scan</strong> — scans all dehydratedState queries (fixes yad-il listing data in queries[1])</li>
+      <li class="new"><span>✅</span> <strong>Rooms fallback chain</strong> — checks infoBar[], additional_info, details, regex scan</li>
+      <li class="new"><span>✅</span> <strong>Multi-endpoint phone</strong> — tries 3 customer API endpoints for phone retrieval</li>
+      <li class="new"><span>✅</span> <strong>Dynamic APP_URL</strong> — setup page generates bookmarklet pointing to current host</li>
+      <li class="new"><span>✅</span> <strong>Graceful fallback</strong> — sends autoscrape=true when client-side parse fails</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💬 Features v2.1 — Threaded Notes</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>Schema migration</strong> — notes column converted from TEXT to JSONB array</li>
+      <li class="new"><span>✅</span> <strong>Note structure</strong> — <code>{userId, userName, text, createdAt}</code> per entry</li>
+      <li class="new"><span>✅</span> <strong>NotesThread component</strong> — chat-style bubbles with author attribution and timestamps</li>
+      <li class="new"><span>✅</span> <strong>Compact card view</strong> — shows last note preview with author name</li>
+      <li class="new"><span>✅</span> <strong>Compose area</strong> — textarea + send button, Ctrl+Enter shortcut</li>
+      <li class="new"><span>✅</span> <strong>Search</strong> — FilterToolbar searches inside note text entries</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📷 Features v2.1 — Native Image Uploads</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>Supabase Storage</strong> — item-images bucket with public read, auth write policies</li>
+      <li class="new"><span>✅</span> <strong>Upload utility</strong> — file validation (5MB limit, JPEG/PNG/WebP/GIF)</li>
+      <li class="new"><span>✅</span> <strong>Hybrid support</strong> — mix external URLs (Yad2) + uploaded files in same images[] array</li>
+      <li class="new"><span>✅</span> <strong>Image preview strip</strong> — thumbnails with hero selector and remove button</li>
+      <li class="new"><span>✅</span> <strong>Upload progress</strong> — loading state and per-file error messages</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">👁️ Features v2.1 — Read Receipts</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>viewed_by column</strong> — JSONB array of user IDs added to apartments table</li>
+      <li class="new"><span>✅</span> <strong>Auto-mark creator</strong> — creator's ID added to viewed_by on insert</li>
+      <li class="new"><span>✅</span> <strong>✨ NEW badge</strong> — pulsing amber badge on items not yet seen by current user</li>
+      <li class="new"><span>✅</span> <strong>Mark on interact</strong> — fires markAsViewed when user opens card or reacts</li>
+      <li class="new"><span>✅</span> <strong>GIN index</strong> — fast containment queries on viewed_by array</li>
+    </ul>
   </div>
 
   <div class="section">
@@ -243,6 +293,7 @@
     <table>
       <thead><tr><th>Date</th><th>Version</th><th>Changes</th></tr></thead>
       <tbody>
+        <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.1</span></td><td><strong>Scraper:</strong> yad-il.co.il, multi-query scan, phone API. <strong>Notes:</strong> threaded JSONB chat. <strong>Images:</strong> Supabase Storage uploads. <strong>Read receipts:</strong> viewed_by + NEW badge</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.0</span></td><td><strong>GroupPick:</strong> Supabase Auth, households, profiles, multi-category, invite codes, dynamic forms</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-green">v1.3</span></td><td>Interactive map view with Leaflet, auto-geocoding, color-coded markers</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-pink">v1.2</span></td><td>Multi-household isolation, per-user reactions, rooms field, advanced filtering</td></tr>
@@ -257,14 +308,15 @@
     <ul class="checklist">
       <li><span>⏳</span> Re-enable RLS with proper auth token flow</li>
       <li><span>⏳</span> Toast notifications for actions</li>
-      <li><span>⏳</span> "Visited" checkbox for apartments</li>
       <li><span>⏳</span> Leave household option</li>
       <li><span>⏳</span> Multiple households per user</li>
       <li><span>⏳</span> Push notifications for new items</li>
+      <li><span>⏳</span> Facebook Marketplace scraper</li>
+      <li><span>⏳</span> Side-by-side comparison view</li>
     </ul>
   </div>
 
-  <div class="footer">GroupPick · v2.0 · September 2026 · Next.js + Supabase Auth + Multi-Category</div>
+  <div class="footer">GroupPick · v2.1 · September 2026 · Next.js + Supabase Auth + Multi-Category + Threaded Notes</div>
 
 </div>
 </body>
