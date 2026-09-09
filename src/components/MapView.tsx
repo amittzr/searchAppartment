@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, ExternalLink, Phone, BedDouble, MapPin } from "lucide-react";
 import type { Apartment } from "@/types/database";
+import { useHousehold } from "@/contexts/HouseholdContext";
 
 // Leaflet types - using any since we load from CDN
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,6 +41,7 @@ function getMarkerColor(apartment: Apartment): string {
 }
 
 export default function MapView({ apartments, onClose, onSelectApartment }: MapViewProps) {
+  const { categoryConfig } = useHousehold();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markersRef = useRef<LeafletMarker[]>([]);
@@ -201,7 +203,7 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
             <MapPin className="w-5 h-5 text-brand-600" />
             <h2 className="text-lg font-bold text-slate-800">Map View</h2>
             <span className="text-sm text-slate-500">
-              ({mappableApartments.length} of {apartments.length} apartments on map)
+              ({mappableApartments.length} of {apartments.length} {categoryConfig.label.toLowerCase()} on map)
             </span>
           </div>
           <button
@@ -231,10 +233,10 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
             <div className="absolute inset-0 flex items-center justify-center bg-slate-100/90">
               <div className="text-center p-6">
                 <MapPin className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-slate-700">No apartments on map yet</h3>
+                <h3 className="text-lg font-semibold text-slate-700">No {categoryConfig.label.toLowerCase()} on map yet</h3>
                 <p className="text-sm text-slate-500 mt-1 max-w-xs">
-                  Apartments will appear on the map once their addresses are geocoded.
-                  Edit an apartment and save it to geocode its location.
+                  Items will appear on the map once their addresses are geocoded.
+                  Edit an item and save it to geocode its location.
                 </p>
               </div>
             </div>
@@ -275,7 +277,12 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
                 <div className="flex items-center gap-3 mt-2">
                   <span className="text-lg font-bold text-brand-600">
                     ₪{formatPrice(selectedApartment.price)}
+                    <span className="text-xs font-normal text-slate-400 ml-1">
+                      {/* Show unit suffix only — strip leading ₪ from config value */}
+                      {categoryConfig.priceUnit.replace("₪", "").trim() || ""}
+                    </span>
                   </span>
+                  {/* Rooms: only relevant for apartments and venues */}
                   {selectedApartment.rooms && (
                     <span className="flex items-center gap-1 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
                       <BedDouble className="w-3 h-3" />

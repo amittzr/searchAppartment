@@ -26,6 +26,7 @@ import type {
 const DEFAULT_FILTERS: FilterState = {
   reactionFilter: "all",
   roomsFilter: null,
+  roomsFilterMax: null,
   priceSort: "newest",
   searchQuery: "",
 };
@@ -253,16 +254,14 @@ function DashboardContent() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {category === "apartment" && (
-              <button
-                onClick={() => setIsMapOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-                title="View on map"
-              >
-                <Map className="w-4 h-4" />
-                <span className="hidden sm:inline">Map</span>
-              </button>
-            )}
+            <button
+              onClick={() => setIsMapOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              title="View on map"
+            >
+              <Map className="w-4 h-4" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"

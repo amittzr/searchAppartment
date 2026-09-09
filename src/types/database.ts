@@ -225,7 +225,9 @@ export type SortOption = "newest" | "oldest" | "price-asc" | "price-desc";
 
 export interface FilterState {
   reactionFilter: ReactionFilterType;
+  // roomsFilter: single value OR range [min, max]
   roomsFilter: string | null;
+  roomsFilterMax: string | null; // null = single value, string = range end
   priceSort: SortOption;
   searchQuery: string;
 }
