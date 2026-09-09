@@ -8,7 +8,6 @@ import {
   X,
   ExternalLink,
   Phone,
-  StickyNote,
   Pencil,
   Trash2,
   MapPin,
@@ -23,14 +22,16 @@ import {
   Calendar,
   Gauge,
 } from "lucide-react";
-import type { Apartment, ReactionStatus, CategoryType, ItemMetadata, CarMetadata, BrideVenueMetadata, ApartmentMetadata } from "@/types/database";
+import type { Apartment, ReactionStatus, CategoryType, ItemMetadata, CarMetadata, BrideVenueMetadata, ApartmentMetadata, NotesThread } from "@/types/database";
 import { useHousehold } from "@/contexts/HouseholdContext";
+import NotesThreadComponent from "./NotesThread";
 
 interface ApartmentCardProps {
   apartment: Apartment;
   onEdit: (apartment: Apartment) => void;
   onDelete: (id: string) => void;
   onReactionChange: (id: string, reaction: ReactionStatus | null) => void;
+  onMarkViewed: (id: string) => void;
 }
 
 // ── Reaction configuration ───────────────────────────────────────────────────
@@ -111,8 +112,18 @@ export default function ApartmentCard({
   onEdit,
   onDelete,
   onReactionChange,
+  onMarkViewed,
 }: ApartmentCardProps) {
-  const { username, partnerName, members, category, categoryConfig } = useHousehold();
+  const { username, partnerName, members, category, categoryConfig, profile } = useHousehold();
+  
+  // Normalize notes to always be an array
+  const notesThread: NotesThread = Array.isArray(apartment.notes) ? apartment.notes : [];
+
+  // Determine if this item is unread by the current user
+  const currentUserId = profile?.id ?? "";
+  const isUnread = currentUserId
+    ? !(apartment.viewed_by ?? []).includes(currentUserId)
+    : false;
   
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -143,6 +154,8 @@ export default function ApartmentCard({
 
   const handleReactionToggle = (reaction: ReactionStatus) => {
     onReactionChange(apartment.id, myReaction === reaction ? null : reaction);
+    // Reacting to an item counts as having seen it
+    if (isUnread) onMarkViewed(apartment.id);
   };
 
   const handlePrevImage = (e: React.MouseEvent) => {
@@ -156,8 +169,13 @@ export default function ApartmentCard({
   };
 
   const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
+    const opening = !isExpanded;
+    setIsExpanded(opening);
     setCurrentImageIndex(0);
+    // Mark as viewed when user opens the card
+    if (opening && isUnread) {
+      onMarkViewed(apartment.id);
+    }
   };
 
   // ── Category-specific metadata display ──────────────────────────────────────
@@ -389,14 +407,17 @@ export default function ApartmentCard({
                   )}
                 </div>
 
-                {/* Notes */}
-                {apartment.notes && (
+                {/* Notes (full thread, read-only in expanded view) */}
+                {notesThread.length > 0 && (
                   <div className="flex flex-col gap-2 p-4 bg-amber-50 rounded-xl border border-amber-100">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-amber-600 uppercase tracking-wide">
-                      <StickyNote className="w-3.5 h-3.5" />
-                      Notes
-                    </div>
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{apartment.notes}</p>
+                    <NotesThreadComponent
+                      thread={notesThread}
+                      newNote=""
+                      onNewNote={() => {}}
+                      onSend={() => {}}
+                      currentUserId={profile?.id ?? ""}
+                      disabled
+                    />
                   </div>
                 )}
 
@@ -543,6 +564,15 @@ export default function ApartmentCard({
           </div>
         )}
 
+        {/* NEW badge — shown when current user hasn't seen this item yet */}
+        {isUnread && (
+          <div className="absolute top-2 right-2 z-10">
+            <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-amber-400 text-amber-900 text-xs font-bold shadow animate-pulse">
+              ✨ NEW
+            </span>
+          </div>
+        )}
+
         {/* Dual reaction badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           <ReactionBadge name={username} reaction={myReaction} isMe compact />
@@ -599,12 +629,16 @@ export default function ApartmentCard({
           )}
         </div>
 
-        {/* Notes */}
-        {apartment.notes && (
-          <div className="flex items-start gap-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg px-2.5 py-2">
-            <StickyNote className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-400" strokeWidth={2} />
-            <p className="line-clamp-2 leading-relaxed">{apartment.notes}</p>
-          </div>
+        {/* Notes (compact read-only) */}
+        {notesThread.length > 0 && (
+          <NotesThreadComponent
+            thread={notesThread}
+            newNote=""
+            onNewNote={() => {}}
+            onSend={() => {}}
+            currentUserId={profile?.id ?? ""}
+            compact
+          />
         )}
 
         <div className="flex-1" />

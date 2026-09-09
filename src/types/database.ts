@@ -59,7 +59,15 @@ export interface ProfileUpdate {
   updated_at?: string;
 }
 
-// ── Category-Specific Metadata ───────────────────────────────
+// ── Note Thread Types ────────────────────────────────────────
+export interface NoteEntry {
+  userId:    string;
+  userName:  string;
+  text:      string;
+  createdAt: string; // ISO timestamp
+}
+
+export type NotesThread = NoteEntry[];
 export interface ApartmentMetadata {
   floor?: number;
   parking?: boolean;
@@ -105,7 +113,8 @@ export interface Item {
   images: string[] | null;
   reactions: ReactionsMap;
   metadata: ItemMetadata;
-  notes: string | null;
+  notes: NotesThread | null;
+  viewed_by: string[];       // Array of user IDs who have seen this item
   latitude: number | null;
   longitude: number | null;
   status: ApartmentStatus;  // Legacy field
@@ -130,7 +139,8 @@ export interface ItemInsert {
   images?: string[] | null;
   reactions?: ReactionsMap;
   metadata?: ItemMetadata;
-  notes?: string | null;
+  notes?: NotesThread | null;
+  viewed_by?: string[];
   latitude?: number | null;
   longitude?: number | null;
   status?: ApartmentStatus;
@@ -153,7 +163,8 @@ export interface ItemUpdate {
   images?: string[] | null;
   reactions?: ReactionsMap;
   metadata?: ItemMetadata;
-  notes?: string | null;
+  notes?: NotesThread | null;
+  viewed_by?: string[];
   latitude?: number | null;
   longitude?: number | null;
   status?: ApartmentStatus;
@@ -229,7 +240,9 @@ export interface ApartmentFormData {
   seller_name: string;
   image_url: string;
   images: string[];
-  notes: string;
+  // Notes: the full thread is read-only in the form; the user only types a new entry
+  notes: NotesThread;      // existing thread displayed as chat
+  newNote: string;         // text input for composing a new note
   status: ApartmentStatus;
   // Category-specific fields stored in metadata
   metadata: ItemMetadata;

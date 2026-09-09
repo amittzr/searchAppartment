@@ -36,29 +36,35 @@ function parseBookmarkletParams(searchParams: URLSearchParams): Partial<Apartmen
 
   const data: Partial<ApartmentFormData> = {};
   
-  const url = searchParams.get('url');
-  const title = searchParams.get('title');
-  const price = searchParams.get('price');
-  const rooms = searchParams.get('rooms');
-  const phone = searchParams.get('phone');
+  const url         = searchParams.get('url');
+  const title       = searchParams.get('title');
+  const price       = searchParams.get('price');
+  const rooms       = searchParams.get('rooms');
+  const phone       = searchParams.get('phone');
   const seller_name = searchParams.get('seller_name');
-  const image_url = searchParams.get('image_url');
-  const imagesJson = searchParams.get('images');
+  const image_url   = searchParams.get('image_url');
+  const imagesJson  = searchParams.get('images');
+  // autoscrape=true means the bookmarklet fell back to URL-only mode;
+  // the modal will detect the Yad2 URL and auto-trigger the scraper
+  const autoScrape  = searchParams.get('autoscrape') === 'true';
 
   if (url) data.url = url;
-  if (title) data.title = title;
-  if (price) data.price = price;
-  if (rooms) data.rooms = rooms;
-  if (phone) data.phone = phone;
-  if (seller_name) data.seller_name = seller_name;
-  if (image_url) data.image_url = image_url;
-  
-  if (imagesJson) {
-    try {
-      const images = JSON.parse(imagesJson);
-      if (Array.isArray(images)) data.images = images;
-    } catch {
-      // Ignore parse errors
+  if (!autoScrape) {
+    // Only populate fields if the bookmarklet did client-side extraction
+    if (title)       data.title       = title;
+    if (price)       data.price       = price;
+    if (rooms)       data.rooms       = rooms;
+    if (phone)       data.phone       = phone;
+    if (seller_name) data.seller_name = seller_name;
+    if (image_url)   data.image_url   = image_url;
+
+    if (imagesJson) {
+      try {
+        const images = JSON.parse(imagesJson);
+        if (Array.isArray(images)) data.images = images;
+      } catch {
+        // Ignore parse errors
+      }
     }
   }
 
@@ -89,6 +95,7 @@ function DashboardContent() {
     updateApartment,
     deleteApartment,
     setReaction,
+    markAsViewed,
     refetch,
   } = useApartments();
 
@@ -187,7 +194,8 @@ function DashboardContent() {
       seller_name: formData.seller_name.trim() || null,
       image_url:   formData.image_url.trim()   || null,
       images:      formData.images.length > 0 ? formData.images : null,
-      notes:       formData.notes.trim()       || null,
+      // Notes: send empty string if no notes yet (DB may still have text column)
+      notes:       (formData.notes.length > 0 ? formData.notes : []) as any,
       metadata:    formData.metadata           || {},
       latitude,
       longitude,
@@ -331,6 +339,7 @@ function DashboardContent() {
                 onEdit={handleOpenEdit}
                 onDelete={handleDeleteRequest}
                 onReactionChange={handleReactionChange}
+                onMarkViewed={markAsViewed}
               />
             ))}
           </div>

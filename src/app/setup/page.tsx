@@ -1,25 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Copy, Check, Smartphone, Monitor, ArrowLeft, BookMarked } from "lucide-react";
 import Link from "next/link";
 
-// Minified bookmarklet code - updated for new Yad2 dehydratedState structure with rooms
-const BOOKMARKLET_CODE = `javascript:(function(){try{if(!window.location.hostname.includes('yad2.co.il')){alert('Please use this on a Yad2 listing page.');return;}var d=document.getElementById('__NEXT_DATA__');if(!d){alert('Could not find listing data. Make sure you are on a single listing page.');return;}var n=JSON.parse(d.textContent);var item=n?.props?.pageProps?.dehydratedState?.queries?.[0]?.state?.data;if(!item){alert('Could not parse listing data.');return;}var data={url:window.location.href,title:'',price:'',rooms:'',phone:'',seller_name:'',image_url:'',images:[]};var addr=item.address;if(addr){var parts=[];if(addr.street?.text)parts.push(addr.street.text);if(addr.houseNumber?.number)parts.push(addr.houseNumber.number);if(addr.neighborhood?.text)parts.push(addr.neighborhood.text);if(addr.city?.text)parts.push(addr.city.text);data.title=parts.join(', ');}if(item.price)data.price=String(item.price);var rooms=item.additionalDetails?.roomsCount||item.additionalDetails?.rooms||item.rooms;if(rooms)data.rooms=String(rooms);if(item.customer?.name)data.seller_name=item.customer.name;if(item.customer?.phone)data.phone=item.customer.phone;if(item.metaData?.images){data.images=item.metaData.images;if(data.images.length>0)data.image_url=data.images[0];}if(!data.phone){var tel=document.querySelector('a[href^="tel:"]');if(tel)data.phone=tel.href.replace('tel:','');}if(!data.phone){var m=document.body.innerText.match(/0[5-9][0-9][-\\s]?[0-9]{3}[-\\s]?[0-9]{4}/g);if(m&&m.length>0)data.phone=m[0].replace(/[-\\s]/g,'');}var u=new URLSearchParams();u.set('autofill','true');u.set('url',data.url);if(data.title)u.set('title',data.title);if(data.price)u.set('price',data.price);if(data.rooms)u.set('rooms',data.rooms);if(data.phone)u.set('phone',data.phone);if(data.seller_name)u.set('seller_name',data.seller_name);if(data.image_url)u.set('image_url',data.image_url);if(data.images.length>0)u.set('images',JSON.stringify(data.images));window.location.href='https://search-appartment.vercel.app?'+u.toString();}catch(e){alert('Error: '+e.message);}})();`;
+// Minified bookmarklet — supports yad2.co.il and yad-il.co.il, /item/ and /listing/ URLs,
+// graceful autoscrape fallback when client-side parse fails.
+const BOOKMARKLET_CODE = `javascript:(function(){"use strict";var APP_URL="https://search-appartment.vercel.app";var h=window.location.hostname;if(!h.includes("yad2.co.il")&&!h.includes("yad-il.co.il")){alert("Please use this bookmarklet on a Yad2 listing page.");return;}var cur=window.location.href;if(!cur.includes("/item/")&&!cur.includes("/listing/")){alert("Please navigate to a single listing page first (not search results).");return;}var ex={url:cur,title:"",price:"",rooms:"",phone:"",seller_name:"",image_url:"",images:[]};var ok=false;try{var el=document.getElementById("__NEXT_DATA__");if(el&&el.textContent){var nd=JSON.parse(el.textContent);var qs=(nd.props&&nd.props.pageProps&&nd.props.pageProps.dehydratedState&&nd.props.pageProps.dehydratedState.queries)||[];var it=null;for(var qi=0;qi<qs.length;qi++){var cd=qs[qi]&&qs[qi].state&&qs[qi].state.data;if(cd&&(cd.token||cd.price||cd.address)){it=cd;break;}}if(!it)it=(nd.props&&nd.props.pageProps&&nd.props.pageProps.listing)||(nd.props&&nd.props.pageProps&&nd.props.pageProps.item)||null;if(it){var addr=it.address;if(addr){var p=[];if(addr.street&&addr.street.text)p.push(addr.street.text);if(addr.houseNumber&&addr.houseNumber.number)p.push(addr.houseNumber.number);if(addr.neighborhood&&addr.neighborhood.text)p.push(addr.neighborhood.text);if(addr.city&&addr.city.text)p.push(addr.city.text);if(p.length>0)ex.title=p.join(", ");}if(it.price)ex.price=String(it.price).replace(/[^\\d]/g,"");var rv=(it.additionalDetails&&(it.additionalDetails.roomsCount||it.additionalDetails.rooms))||it.rooms||it.roomsCount||(it.infoBar&&(function(){for(var i=0;i<it.infoBar.length;i++){if(it.infoBar[i].key==="rooms"||it.infoBar[i].key==="roomsCount")return it.infoBar[i].value;}return null;}()))||null;if(rv)ex.rooms=String(rv);if(it.customer&&it.customer.name)ex.seller_name=it.customer.name;if(it.customer&&it.customer.phone)ex.phone=it.customer.phone;if(it.metaData&&Array.isArray(it.metaData.images)&&it.metaData.images.length>0){ex.images=it.metaData.images;ex.image_url=ex.images[0];}else if(it.metaData&&it.metaData.coverImage){ex.image_url=it.metaData.coverImage;ex.images=[it.metaData.coverImage];}if(ex.title||ex.price)ok=true;}}}catch(e){console.warn("GroupPick bookmarklet:",e);}if(!ex.phone){try{var tl=document.querySelectorAll("a[href^=\\"tel:\\"]");if(tl.length>0)ex.phone=tl[0].getAttribute("href").replace("tel:","");}catch(e){}}if(!ex.phone){try{var bm=document.body.innerText||"";var pm=bm.match(/0[5-9][0-9][-\\s]?[0-9]{3}[-\\s]?[0-9]{4}/);if(pm)ex.phone=pm[0].replace(/[-\\s]/g,"");}catch(e){}}var ps=new URLSearchParams();ps.set("autofill","true");ps.set("url",ex.url);if(ok){if(ex.title)ps.set("title",ex.title);if(ex.price)ps.set("price",ex.price);if(ex.rooms)ps.set("rooms",ex.rooms);if(ex.phone)ps.set("phone",ex.phone);if(ex.seller_name)ps.set("seller_name",ex.seller_name);if(ex.image_url)ps.set("image_url",ex.image_url);if(ex.images.length>0)ps.set("images",JSON.stringify(ex.images));}else{ps.set("autoscrape","true");}window.location.href=APP_URL+"/?"+ps.toString();})();`;
 
 export default function SetupPage() {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"mobile" | "desktop">("mobile");
+  const [bookmarkletCode, setBookmarkletCode] = useState(BOOKMARKLET_CODE);
+
+  // After mount, replace APP_URL with the current host.
+  // - On localhost: redirects to localhost (for dev testing)
+  // - On Vercel: redirects to Vercel (for real use)
+  useEffect(() => {
+    const currentOrigin = window.location.origin; // e.g. "http://localhost:3001" or "https://search-appartment.vercel.app"
+    setBookmarkletCode(
+      BOOKMARKLET_CODE.replace("https://search-appartment.vercel.app", currentOrigin)
+    );
+  }, []);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(BOOKMARKLET_CODE);
+      await navigator.clipboard.writeText(bookmarkletCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const textarea = document.createElement("textarea");
-      textarea.value = BOOKMARKLET_CODE;
+      textarea.value = bookmarkletCode;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand("copy");
@@ -86,9 +97,9 @@ export default function SetupPage() {
         {/* Instructions */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {activeTab === "mobile" ? (
-            <MobileInstructions onCopy={handleCopy} copied={copied} code={BOOKMARKLET_CODE} />
+            <MobileInstructions onCopy={handleCopy} copied={copied} code={bookmarkletCode} />
           ) : (
-            <DesktopInstructions onCopy={handleCopy} copied={copied} code={BOOKMARKLET_CODE} />
+            <DesktopInstructions onCopy={handleCopy} copied={copied} code={bookmarkletCode} />
           )}
         </div>
 

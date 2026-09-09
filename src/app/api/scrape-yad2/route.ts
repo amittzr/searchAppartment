@@ -30,60 +30,80 @@ const YAD2_API_CUSTOMER   = "https://gw.yad2.co.il/realestate-item/customer";
 
 /**
  * Fetches customer contact info (including phone and name) from Yad2's customer API.
+ * Tries multiple known endpoints since Yad2 changes them occasionally.
  */
 async function fetchCustomerInfo(
   token: string,
   cookieHeader: string
 ): Promise<{ phone: string | null; name: string | null }> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+  // Try multiple customer API endpoints
+  const endpoints = [
+    `${YAD2_API_CUSTOMER}/${token}`,
+    `https://gw.yad2.co.il/realestate-feed/item/${token}/contact`,
+    `https://gw.yad2.co.il/api/item/${token}/contact`,
+  ];
 
-    // Use exact headers that browser sends for XHR requests
-    const response = await fetch(`${YAD2_API_CUSTOMER}/${token}`, {
-      method: "GET",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Referer": `https://www.yad2.co.il/realestate/item/${token}`,
-        "Origin": "https://www.yad2.co.il",
-        "Sec-Ch-Ua": '"Chromium";v="125", "Not.A/Brand";v="24"',
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": '"Windows"',
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-site",
-        ...(cookieHeader ? { "Cookie": cookieHeader } : {}),
-      },
-      signal: controller.signal,
-    });
+  for (const endpoint of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
 
-    clearTimeout(timeout);
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+          "Accept": "application/json, text/plain, */*",
+          "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
+          "Referer": `https://www.yad2.co.il/realestate/item/${token}`,
+          "Origin": "https://www.yad2.co.il",
+          "Sec-Ch-Ua": '"Chromium";v="125", "Not.A/Brand";v="24"',
+          "Sec-Ch-Ua-Mobile": "?0",
+          "Sec-Ch-Ua-Platform": '"Windows"',
+          "Sec-Fetch-Dest": "empty",
+          "Sec-Fetch-Mode": "cors",
+          "Sec-Fetch-Site": "same-site",
+          ...(cookieHeader ? { "Cookie": cookieHeader } : {}),
+        },
+        signal: controller.signal,
+      });
 
-    const contentType = response.headers.get("content-type") ?? "";
-    console.log(`[scrape-yad2] Customer API status: ${response.status}, content-type: ${contentType}`);
+      clearTimeout(timeout);
 
-    if (response.ok && contentType.includes("application/json")) {
-      const data = await response.json();
-      const phone = data?.data?.phone ?? data?.phone ?? null;
-      const name = data?.data?.name ?? data?.name ?? null;
-      if (phone || name) {
-        console.log(`[scrape-yad2] Customer API returned phone: ${phone}, name: ${name}`);
-        return {
-          phone: phone ? String(phone).trim() : null,
-          name: name ? String(name).trim() : null,
-        };
+      const contentType = response.headers.get("content-type") ?? "";
+      console.log(`[scrape-yad2] Customer API ${endpoint} status: ${response.status}`);
+
+      if (response.ok && contentType.includes("application/json")) {
+        const data = await response.json();
+        // Try many possible response shapes
+        const phone =
+          data?.data?.phone     ??
+          data?.phone           ??
+          data?.data?.mobile    ??
+          data?.mobile          ??
+          data?.contact?.phone  ??
+          null;
+        const name =
+          data?.data?.name      ??
+          data?.name            ??
+          data?.contact?.name   ??
+          data?.data?.contactName ??
+          null;
+
+        if (phone || name) {
+          console.log(`[scrape-yad2] Customer API returned phone: ${phone}, name: ${name}`);
+          return {
+            phone: phone ? String(phone).replace(/[^\d+]/g, "") : null,
+            name:  name  ? String(name).trim()                  : null,
+          };
+        }
       }
-    } else if (!contentType.includes("application/json")) {
-      console.warn(`[scrape-yad2] Customer API returned HTML (blocked by Radware)`);
-    } else {
-      console.warn(`[scrape-yad2] Customer API returned ${response.status}`);
+    } catch (err) {
+      console.warn(`[scrape-yad2] Customer API ${endpoint} failed: ${err instanceof Error ? err.message : err}`);
     }
-  } catch (err) {
-    console.warn(`[scrape-yad2] Customer API fetch failed: ${err instanceof Error ? err.message : err}`);
   }
+
+  console.warn(`[scrape-yad2] All customer API endpoints failed — phone unavailable (Yad2 virtual number protection)`);
   return { phone: null, name: null };
 }
 
@@ -91,6 +111,7 @@ async function fetchCustomerInfo(
  * Extracts the item token from a Yad2 listing URL.
  * Handles formats like:
  *   https://www.yad2.co.il/realestate/item/jerusalem-area/s317bknb
+ *   https://www.yad2.co.il/realestate/listing/s317bknb          ← agency/project URLs
  *   https://www.yad2.co.il/item/s317bknb
  *   https://www.yad2.co.il/realestate/item/s317bknb?opened-from=feed
  */
@@ -128,10 +149,24 @@ function parseApiResponse(data: any): Partial<ScrapeResult> {
 
   // ── Find the actual listing data ───────────────────────────────────────
   // Path 1: dehydratedState (React Query pattern from Next.js SSR)
-  let item =
-    data?.dehydratedState?.queries?.[0]?.state?.data ??
-    data?.props?.pageProps?.dehydratedState?.queries?.[0]?.state?.data ??
-    null;
+  // Check ALL queries, not just [0] — yad-il.co.il puts listing data in queries[1]
+  const queries =
+    data?.dehydratedState?.queries ??
+    data?.props?.pageProps?.dehydratedState?.queries ??
+    [];
+
+  let item = null;
+
+  if (Array.isArray(queries)) {
+    for (const query of queries) {
+      const candidate = query?.state?.data;
+      // The listing query has token, price, address — skip UI config queries
+      if (candidate && (candidate.token || candidate.price || candidate.address)) {
+        item = candidate;
+        break;
+      }
+    }
+  }
 
   // Path 2: Direct item/listing object
   if (!item) {
@@ -161,15 +196,32 @@ function parseApiResponse(data: any): Partial<ScrapeResult> {
   }
 
   // ── Rooms ──────────────────────────────────────────────────────────────
+  // Check many possible paths in the Yad2 JSON structure
   const rawRooms =
     item.additionalDetails?.roomsCount    ??
     item.additionalDetails?.rooms         ??
     item.rooms                            ??
     item.roomsCount                       ??
+    // infoBar array: [{ key: "rooms", value: "3" }, ...]
+    item.infoBar?.find((b: any) => b.key === "rooms" || b.key === "roomsCount")?.value ??
+    item.additional_info?.rooms           ??
+    item.details?.rooms                   ??
     null;
+
   if (rawRooms != null) {
     result.rooms = String(rawRooms);
     console.log(`[scrape-yad2] Extracted rooms: ${result.rooms}`);
+  } else {
+    // Last resort: regex scan the raw JSON string for any rooms pattern
+    try {
+      const jsonStr = JSON.stringify(item);
+      const roomsMatch = jsonStr.match(/"roomsCount"\s*:\s*([0-9.]+)/i)
+        ?? jsonStr.match(/"rooms"\s*:\s*"?([0-9.]+)"?/i);
+      if (roomsMatch?.[1]) {
+        result.rooms = roomsMatch[1];
+        console.log(`[scrape-yad2] Extracted rooms via regex fallback: ${result.rooms}`);
+      }
+    } catch { /* ignore */ }
   }
 
   // ── Address / title ────────────────────────────────────────────────────
@@ -246,7 +298,9 @@ export async function POST(
 
   if (
     !url.startsWith("https://www.yad2.co.il/") &&
-    !url.startsWith("http://www.yad2.co.il/")
+    !url.startsWith("http://www.yad2.co.il/")  &&
+    !url.startsWith("https://www.yad-il.co.il/") &&
+    !url.startsWith("http://www.yad-il.co.il/")
   ) {
     return NextResponse.json(
       { error: "Only Yad2 URLs are supported." },
@@ -263,21 +317,20 @@ export async function POST(
     );
   }
 
-  // Try realestate-specific endpoint first, then generic item endpoint
-  const isRealEstate = url.includes("/realestate/");
-  const primaryApiUrl   = isRealEstate
-    ? `${YAD2_API_REALESTATE}/${token}`
-    : `${YAD2_API_ITEM}/${token}`;
-  const fallbackApiUrl  = isRealEstate
-    ? `${YAD2_API_ITEM}/${token}`
-    : `${YAD2_API_REALESTATE}/${token}`;
+  // For yad-il.co.il: the gateway API is always on gw.yad2.co.il (same backend)
+  // and listings are always realestate type
+  const isRealEstate = url.includes("/realestate/") || url.includes("yad-il.co.il");
 
+  // yad-il.co.il tokens work on the yad2 gateway — always try realestate first
+  const primaryApiUrl  = `${YAD2_API_REALESTATE}/${token}`;
+  const fallbackApiUrl = `${YAD2_API_ITEM}/${token}`;
   const apiHeaders: Record<string, string> = {
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     Accept: "application/json, text/plain, */*",
     "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
-    Referer: url,
+    // Always use yad2.co.il as Referer — the gateway expects it regardless of source domain
+    Referer: `https://www.yad2.co.il/realestate/item/${token}`,
     Origin: "https://www.yad2.co.il",
     "Sec-Fetch-Dest": "empty",
     "Sec-Fetch-Mode": "cors",

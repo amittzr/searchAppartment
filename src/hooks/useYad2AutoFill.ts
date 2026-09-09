@@ -31,7 +31,7 @@ async function collectYad2Cookies(): Promise<string> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const all: any[] = await cookieStore.getAll();
       const yad2 = all
-        .filter((c) => c.domain?.includes("yad2") || c.name?.startsWith("y2"))
+        .filter((c) => c.domain?.includes("yad2") || c.domain?.includes("yad-il") || c.name?.startsWith("y2"))
         .map((c) => `${c.name}=${c.value}`)
         .join("; ");
       if (yad2) return yad2;
@@ -74,7 +74,7 @@ export function useYad2AutoFill(): UseYad2AutoFillReturn {
         return null;
       }
 
-      if (!url.includes("yad2.co.il")) {
+      if (!url.includes("yad2.co.il") && !url.includes("yad-il.co.il")) {
         setStatus("error");
         setErrorMessage("Auto-fill only works with Yad2 links (yad2.co.il).");
         return null;

@@ -10,16 +10,19 @@ import {
   DollarSign,
   Phone,
   Image as ImageIcon,
-  StickyNote,
   Wand2,
   CheckCircle2,
   User,
   BedDouble,
+  Upload,
+  Trash2,
 } from "lucide-react";
-import type { Apartment, ApartmentFormData, ApartmentStatus, ItemMetadata } from "@/types/database";
+import type { Apartment, ApartmentFormData, ApartmentStatus, ItemMetadata, NotesThread } from "@/types/database";
 import { useYad2AutoFill } from "@/hooks/useYad2AutoFill";
 import { useHousehold } from "@/contexts/HouseholdContext";
 import CategoryFields from "./CategoryFields";
+import NotesThreadComponent from "./NotesThread";
+import { uploadImages } from "@/lib/upload-images";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -43,7 +46,8 @@ const EMPTY_FORM: ApartmentFormData = {
   seller_name: "",
   image_url: "",
   images: [],
-  notes: "",
+  notes: [],
+  newNote: "",
   status: "all",
   metadata: {},
 };
@@ -65,21 +69,28 @@ export default function ApartmentModal({
   initialData,
   onInitialDataConsumed,
 }: ApartmentModalProps) {
-  const { categoryConfig, category } = useHousehold();
+  const { categoryConfig, category, profile, household } = useHousehold();
   const [form, setForm]               = useState<ApartmentFormData>(EMPTY_FORM);
   const [errors, setErrors]           = useState<Partial<Record<keyof ApartmentFormData, string>>>({});
   const [submitting, setSubmitting]   = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Image upload state
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadErrors, setUploadErrors]       = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-fill: iframe-first, server-side API fallback
   const autoFill = useYad2AutoFill();
 
   const firstInputRef = useRef<HTMLInputElement>(null);
 
-  // Populate form when editing; reset when adding; or use initialData from bookmarklet
+  // Populate form when editing; reset when adding; or use initialData from bookmarklet.
+  // NOTE: intentionally NOT including initialData in deps — it is consumed once on open
+  // and then nulled out; re-running on null would wipe the form.
   useEffect(() => {
-    if (!isOpen) return; // Only run when modal is open
-    
+    if (!isOpen) return;
+
     if (editingApartment) {
       setForm({
         url:         editingApartment.url         ?? "",
@@ -90,7 +101,8 @@ export default function ApartmentModal({
         seller_name: editingApartment.seller_name ?? "",
         image_url:   editingApartment.image_url   ?? "",
         images:      editingApartment.images      ?? [],
-        notes:       editingApartment.notes       ?? "",
+        notes:       Array.isArray(editingApartment.notes) ? editingApartment.notes : [],
+        newNote:     "",
         status:      editingApartment.status,
         metadata:    editingApartment.metadata    ?? {},
       });
@@ -107,8 +119,25 @@ export default function ApartmentModal({
         image_url:   initialData.image_url   ?? "",
         images:      initialData.images      ?? [],
       });
-      // Signal that we've consumed the initial data (after a tick to avoid re-render during render)
-      setTimeout(() => onInitialDataConsumed?.(), 0);
+      // If bookmarklet fell back to URL-only (autoscrape=true), fire the scraper
+      if (initialData.url && !initialData.title && !initialData.price) {
+        setTimeout(async () => {
+          const scraped = await autoFill.trigger(initialData.url!);
+          if (!scraped) return;
+          setForm((prev) => ({
+            ...prev,
+            title:       scraped.title       || prev.title,
+            price:       scraped.price       || prev.price,
+            rooms:       scraped.rooms       || prev.rooms,
+            phone:       scraped.phone       || prev.phone,
+            seller_name: scraped.seller_name || prev.seller_name,
+            image_url:   scraped.image_url   || prev.image_url,
+            images:      scraped.images?.length ? scraped.images : prev.images,
+          }));
+        }, 300);
+      }
+      // Mark initial data as consumed AFTER populating form
+      setTimeout(() => onInitialDataConsumed?.(), 50);
     } else if (!editingApartment && !initialData) {
       setForm(EMPTY_FORM);
     }
@@ -181,6 +210,49 @@ export default function ApartmentModal({
     }));
   }, [form.url, autoFill]);
 
+  // ── Image file upload handler ──────────────────────────────────────────
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    if (!household?.id) {
+      setUploadErrors(["No household found. Please refresh and try again."]);
+      return;
+    }
+
+    setUploadingImages(true);
+    setUploadErrors([]);
+
+    const { urls, errors: uploadErrs } = await uploadImages(files, household.id);
+
+    if (urls.length > 0) {
+      setForm((prev) => ({
+        ...prev,
+        images:    [...prev.images, ...urls],
+        image_url: prev.image_url || urls[0], // Set first upload as hero if empty
+      }));
+    }
+
+    if (uploadErrs.length > 0) {
+      setUploadErrors(uploadErrs);
+    }
+
+    setUploadingImages(false);
+    // Reset input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [household?.id]);
+
+  // ── Remove a single image from the list ────────────────────────────────
+  const handleRemoveImage = useCallback((indexToRemove: number) => {
+    setForm((prev) => {
+      const newImages   = prev.images.filter((_, i) => i !== indexToRemove);
+      const removedUrl  = prev.images[indexToRemove];
+      const newImageUrl = prev.image_url === removedUrl
+        ? (newImages[0] ?? "")
+        : prev.image_url;
+      return { ...prev, images: newImages, image_url: newImageUrl };
+    });
+  }, []);
+
   // ── Validation ────────────────────────────────────────────────────────────
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof ApartmentFormData, string>> = {};
@@ -227,7 +299,8 @@ export default function ApartmentModal({
   if (!isOpen) return null;
 
   const isEditing   = Boolean(editingApartment);
-  const isYad2Url   = form.url.trim().includes("yad2.co.il");
+  const isYad2Url   = (form.url.trim().includes("yad2.co.il") || form.url.trim().includes("yad-il.co.il")) && 
+    (form.url.includes("/item/") || form.url.includes("/listing/") || form.url.includes("/realestate/"));
   const canAutoFill = isYad2Url && autoFill.status !== "loading";
 
   return (
@@ -295,7 +368,7 @@ export default function ApartmentModal({
                   type="url"
                   value={form.url}
                   onChange={(e) => setField("url", e.target.value)}
-                  placeholder="https://www.yad2.co.il/item/..."
+                  placeholder="https://www.yad2.co.il/item/... or /listing/..."
                   className={`${inputClass(!!errors.url)} flex-1 min-w-0`}
                   autoComplete="off"
                 />
@@ -420,6 +493,7 @@ export default function ApartmentModal({
               label="Phone Number"
               icon={<Phone className="w-4 h-4" />}
               error={errors.phone}
+              hint="On Yad2: click 'Show phone' first, then use the bookmarklet"
             >
               <input
                 type="tel"
@@ -447,12 +521,12 @@ export default function ApartmentModal({
               />
             </Field>
 
-            {/* ── Image URL ────────────────────────────────────────────── */}
+            {/* ── Image URL + Native Upload ─────────────────────────── */}
             <Field
               label="Image URL"
               icon={<ImageIcon className="w-4 h-4" />}
               error={errors.image_url}
-              hint="Direct link to a photo"
+              hint="Paste a link or upload photos below"
             >
               <input
                 type="url"
@@ -464,21 +538,117 @@ export default function ApartmentModal({
               />
             </Field>
 
-            {/* ── Shared Notes ─────────────────────────────────────────── */}
-            <Field
-              label="Shared Notes"
-              icon={<StickyNote className="w-4 h-4" />}
-              error={errors.notes}
-              hint="Visible to both of you"
-            >
-              <textarea
-                value={form.notes}
-                onChange={(e) => setField("notes", e.target.value)}
-                placeholder="Nice balcony, close to the train station..."
-                rows={3}
-                className={`${inputClass(!!errors.notes)} resize-none`}
+            {/* ── Upload Photos ─────────────────────────────────────── */}
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+                <span className="text-slate-400"><Upload className="w-4 h-4" /></span>
+                Upload Photos
+                <span className="text-slate-400 font-normal text-xs ml-1">— JPEG, PNG, WebP up to 5 MB each</span>
+              </label>
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                onChange={handleFileUpload}
+                className="hidden"
+                aria-label="Upload images"
               />
-            </Field>
+
+              {/* Upload button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImages || submitting}
+                className="
+                  flex items-center justify-center gap-2 w-full py-2.5 rounded-xl
+                  border-2 border-dashed border-slate-300 text-slate-500 text-sm
+                  hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50
+                  disabled:opacity-50 disabled:cursor-not-allowed transition-all
+                "
+              >
+                {uploadingImages ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
+                ) : (
+                  <><Upload className="w-4 h-4" /> Choose Photos</>
+                )}
+              </button>
+
+              {/* Upload errors */}
+              {uploadErrors.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  {uploadErrors.map((err, i) => (
+                    <p key={i} className="flex items-center gap-1 text-xs text-red-500 font-medium">
+                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                      {err}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {/* Image preview strip */}
+              {form.images.length > 0 && (
+                <div className="flex gap-2 flex-wrap mt-1">
+                  {form.images.map((url, idx) => (
+                    <div key={idx} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-slate-200 flex-shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt={`Preview ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.3"; }}
+                      />
+                      {/* Hero badge */}
+                      {form.image_url === url && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-brand-600/80 text-white text-[10px] text-center font-semibold py-0.5">
+                          Hero
+                        </div>
+                      )}
+                      {/* Remove button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(idx)}
+                        className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label={`Remove image ${idx + 1}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                      {/* Set as hero on click */}
+                      {form.image_url !== url && (
+                        <button
+                          type="button"
+                          onClick={() => setField("image_url", url)}
+                          className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors"
+                          title="Set as hero image"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── Threaded Notes ─────────────────────────────────────────── */}
+            <NotesThreadComponent
+              thread={form.notes}
+              newNote={form.newNote}
+              onNewNote={(val) => setField("newNote", val)}
+              onSend={() => {
+                if (!form.newNote.trim() || !profile) return;
+                const newEntry = {
+                  userId:    profile.id,
+                  userName:  profile.full_name,
+                  text:      form.newNote.trim(),
+                  createdAt: new Date().toISOString(),
+                };
+                setField("notes", [...form.notes, newEntry]);
+                setField("newNote", "");
+              }}
+              currentUserId={profile?.id ?? ""}
+              disabled={submitting}
+            />
 
             {/* ── Category-specific fields ──────────────────────────── */}
             <CategoryFields

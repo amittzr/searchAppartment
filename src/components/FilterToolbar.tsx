@@ -299,7 +299,7 @@ export function filterAndSortApartments(
     result = result.filter(
       (apt) =>
         apt.title.toLowerCase().includes(query) ||
-        apt.notes?.toLowerCase().includes(query) ||
+        (Array.isArray(apt.notes) && apt.notes.some((n) => n.text?.toLowerCase().includes(query))) ||
         apt.seller_name?.toLowerCase().includes(query)
     );
   }

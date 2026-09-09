@@ -30,6 +30,8 @@ interface UseApartmentsReturn {
   // Reaction operations
   setStatus: (id: string, status: ApartmentStatus) => Promise<{ error: string | null }>;
   setReaction: (id: string, reaction: ReactionStatus | null) => Promise<{ error: string | null }>;
+  // Read-receipt
+  markAsViewed: (id: string) => Promise<void>;
   // Utility
   refetch: () => Promise<void>;
   // Match detection
@@ -39,7 +41,7 @@ interface UseApartmentsReturn {
 
 export function useApartments(): UseApartmentsReturn {
   const supabase = getSupabaseClient();
-  const { household, username, members, category: householdCategory } = useHousehold();
+  const { household, username, members, category: householdCategory, user } = useHousehold();
   
   const householdId = household?.id;
   const category = householdCategory;
@@ -68,11 +70,13 @@ export function useApartments(): UseApartmentsReturn {
     if (fetchError) {
       setError(fetchError.message);
     } else {
-      // Ensure reactions and metadata fields default to empty objects if null
+      // Ensure reactions, metadata, notes and viewed_by fields are correctly typed
       const normalized = (data ?? []).map((apt: any) => ({
         ...apt,
         reactions: apt.reactions ?? {},
-        metadata: apt.metadata ?? {},
+        metadata:  apt.metadata  ?? {},
+        notes:     Array.isArray(apt.notes)     ? apt.notes     : [],
+        viewed_by: Array.isArray(apt.viewed_by) ? apt.viewed_by : [],
       })) as Apartment[];
       setApartments(normalized);
     }
@@ -100,7 +104,9 @@ export function useApartments(): UseApartmentsReturn {
           const newApt = {
             ...payload.new,
             reactions: (payload.new as Apartment).reactions ?? {},
-            metadata: (payload.new as Apartment).metadata ?? {},
+            metadata:  (payload.new as Apartment).metadata  ?? {},
+            notes:     Array.isArray((payload.new as Apartment).notes) ? (payload.new as Apartment).notes : [],
+            viewed_by: Array.isArray((payload.new as Apartment).viewed_by) ? (payload.new as Apartment).viewed_by : [],
           } as Apartment;
           setApartments((prev) => [newApt, ...prev]);
         }
@@ -117,7 +123,9 @@ export function useApartments(): UseApartmentsReturn {
           const updatedApt = {
             ...payload.new,
             reactions: (payload.new as Apartment).reactions ?? {},
-            metadata: (payload.new as Apartment).metadata ?? {},
+            metadata:  (payload.new as Apartment).metadata  ?? {},
+            notes:     Array.isArray((payload.new as Apartment).notes) ? (payload.new as Apartment).notes : [],
+            viewed_by: Array.isArray((payload.new as Apartment).viewed_by) ? (payload.new as Apartment).viewed_by : [],
           } as Apartment;
           setApartments((prev) =>
             prev.map((apt) =>
@@ -157,9 +165,11 @@ export function useApartments(): UseApartmentsReturn {
       const insertData: ApartmentInsert = {
         ...data,
         household_id: householdId,
-        category: category,
-        reactions: data.reactions ?? {},
-        metadata: data.metadata ?? {},
+        category:     category,
+        reactions:    data.reactions ?? {},
+        metadata:     data.metadata  ?? {},
+        // Creator has already "seen" their own post
+        viewed_by:    user?.id ? [user.id] : [],
       };
 
       const { error: insertError } = await (supabase
@@ -245,7 +255,23 @@ export function useApartments(): UseApartmentsReturn {
     [apartments, updateApartment, username]
   );
 
-  // ── Match detection: all household members liked ────────────────────────────
+  // ── Mark item as viewed by current user ────────────────────────────────────
+  const markAsViewed = useCallback(
+    async (id: string): Promise<void> => {
+      if (!user?.id || !householdId) return;
+
+      const apartment = apartments.find((apt) => apt.id === id);
+      if (!apartment) return;
+
+      // Skip if already viewed
+      if (apartment.viewed_by?.includes(user.id)) return;
+
+      const newViewedBy = [...(apartment.viewed_by ?? []), user.id];
+      // Fire-and-forget — no need to await or show errors to the user
+      updateApartment(id, { viewed_by: newViewedBy }).catch(() => {});
+    },
+    [apartments, user?.id, householdId, updateApartment]
+  );
   const isMatch = useCallback(
     (apt: Apartment): boolean => {
       if (members.length < 2) return false;
@@ -280,6 +306,7 @@ export function useApartments(): UseApartmentsReturn {
     deleteApartment,
     setStatus,
     setReaction,
+    markAsViewed,
     refetch: fetchApartments,
     isMatch,
     getReactionCounts,
