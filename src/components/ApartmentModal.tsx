@@ -16,6 +16,7 @@ import {
   BedDouble,
   Upload,
   Trash2,
+  Sparkles,
 } from "lucide-react";
 import type { Apartment, ApartmentFormData, ApartmentStatus, ItemMetadata, NotesThread } from "@/types/database";
 import { useYad2AutoFill } from "@/hooks/useYad2AutoFill";
@@ -79,6 +80,14 @@ export default function ApartmentModal({
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadErrors, setUploadErrors]       = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Screenshot AI extraction state
+  const [screenshotExtracting, setScreenshotExtracting] = useState(false);
+  const [screenshotBanner, setScreenshotBanner]         = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const screenshotInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-fill: iframe-first, server-side API fallback
   const autoFill = useYad2AutoFill();
@@ -253,6 +262,98 @@ export default function ApartmentModal({
     });
   }, []);
 
+  // ── Screenshot AI extraction handler ────────────────────────────────────
+  const handleScreenshotExtract = useCallback(async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!household?.id) {
+      setScreenshotBanner({ type: "error", message: "No household found. Please refresh." });
+      return;
+    }
+
+    setScreenshotExtracting(true);
+    setScreenshotBanner(null);
+
+    try {
+      // ── Step 1: Send to Gemini for extraction ──────────────────────────
+      const extractFormData = new FormData();
+      extractFormData.append("file", file);
+      extractFormData.append("category", category);
+
+      const extractRes = await fetch("/api/parse-screenshot", {
+        method: "POST",
+        body: extractFormData,
+      });
+
+      const extractData = await extractRes.json();
+
+      if (!extractRes.ok) {
+        setScreenshotBanner({
+          type: "error",
+          message: extractData.error ?? "AI extraction failed. Try a clearer screenshot.",
+        });
+        return;
+      }
+
+      // ── Step 2: Upload screenshot to Supabase Storage ──────────────────
+      const { urls: uploadedUrls, errors: uploadErrs } = await uploadImages(
+        [file],
+        household.id
+      );
+
+      // ── Step 3: Merge extracted data into form (never erase user input) ─
+      setForm((prev) => {
+        // For car category, populate metadata fields
+        const newMetadata = { ...prev.metadata };
+        if (category === "car") {
+          const d = extractData as { year?: string; mileage?: string };
+          const carMeta = newMetadata as Record<string, unknown>;
+          if (d.year)    carMeta.year    = d.year;
+          if (d.mileage) carMeta.mileage = d.mileage;
+        }
+
+        const screenshotUrl = uploadedUrls[0] ?? "";
+        const newImages     = screenshotUrl
+          ? [screenshotUrl, ...prev.images.filter((u) => u !== screenshotUrl)]
+          : prev.images;
+
+        return {
+          ...prev,
+          title:       extractData.title       || prev.title,
+          price:       extractData.price       || prev.price,
+          rooms:       extractData.rooms       || prev.rooms,
+          phone:       extractData.phone       || prev.phone,
+          seller_name: extractData.seller_name || prev.seller_name,
+          // Screenshot becomes the hero image
+          image_url:   screenshotUrl || prev.image_url,
+          images:      newImages,
+          metadata:    newMetadata,
+        };
+      });
+
+      const warnParts: string[] = [];
+      if (uploadErrs.length > 0) warnParts.push("Screenshot could not be saved to storage.");
+
+      setScreenshotBanner({
+        type: "success",
+        message: warnParts.length > 0
+          ? `Fields extracted. ${warnParts.join(" ")}`
+          : "Fields extracted from screenshot.",
+      });
+    } catch (err) {
+      setScreenshotBanner({
+        type: "error",
+        message: err instanceof Error ? err.message : "Unexpected error during extraction.",
+      });
+    } finally {
+      setScreenshotExtracting(false);
+      // Reset so the same file can be re-selected
+      if (screenshotInputRef.current) screenshotInputRef.current.value = "";
+    }
+  }, [category, household?.id]);
+
   // ── Validation ────────────────────────────────────────────────────────────
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof ApartmentFormData, string>> = {};
@@ -354,6 +455,85 @@ export default function ApartmentModal({
                 <span>{submitError}</span>
               </div>
             )}
+
+            {/* ── Screenshot AI Extraction ───────────────────────────────── */}
+            <div className="flex flex-col gap-2 p-3 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200">
+              {/* Header */}
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-600 flex-shrink-0" />
+                <span className="text-sm font-semibold text-violet-800">
+                  AI Extract from Screenshot
+                </span>
+                <span className="ml-auto text-xs text-violet-500 font-normal">
+                  Facebook, any site
+                </span>
+              </div>
+
+              <p className="text-xs text-violet-600">
+                Upload a screenshot and AI will fill the form automatically.
+              </p>
+
+              {/* Hidden file input */}
+              <input
+                ref={screenshotInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleScreenshotExtract}
+                className="hidden"
+                aria-label="Upload screenshot for AI extraction"
+              />
+
+              {/* Extract button */}
+              <button
+                type="button"
+                onClick={() => screenshotInputRef.current?.click()}
+                disabled={screenshotExtracting || submitting}
+                className="
+                  flex items-center justify-center gap-2 w-full py-2.5 rounded-xl
+                  bg-violet-600 text-white text-sm font-semibold
+                  hover:bg-violet-700 active:scale-95 transition-all
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
+                  shadow-sm
+                "
+              >
+                {screenshotExtracting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Extracting with AI…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Choose Screenshot &amp; Extract 🪄
+                  </>
+                )}
+              </button>
+
+              {/* Result banner */}
+              {screenshotBanner && (
+                <div className={`
+                  flex items-start gap-2 px-3 py-2 rounded-lg text-xs font-medium
+                  ${screenshotBanner.type === "success"
+                    ? "bg-green-50 border border-green-200 text-green-700"
+                    : "bg-red-50 border border-red-200 text-red-700"
+                  }
+                `}>
+                  {screenshotBanner.type === "success"
+                    ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                    : <AlertCircle  className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  }
+                  <span className="flex-1">{screenshotBanner.message}</span>
+                  <button
+                    type="button"
+                    onClick={() => setScreenshotBanner(null)}
+                    className="text-current opacity-60 hover:opacity-100 flex-shrink-0"
+                    aria-label="Dismiss"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* ── URL field + Auto-Fill button ──────────────────────────── */}
             <Field

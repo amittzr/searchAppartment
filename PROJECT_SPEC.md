@@ -11,7 +11,7 @@
 - **Production URL:** https://search-appartment.vercel.app
 - **Repository:** https://github.com/amittzr/searchAppartment
 - **Database:** Supabase — project `khozzonoqctwbzsowulv` (ap-southeast-1, Singapore)
-- **Current Version:** v2.2 — September 2026
+- **Current Version:** v2.3 — September 2026
 
 ---
 
@@ -43,7 +43,9 @@ src/
 │   ├── signup/page.tsx           ← Supabase Auth signup (with invite password gate)
 │   ├── onboarding/page.tsx       ← Create or join household flow
 │   ├── setup/page.tsx            ← Bookmarklet setup page (dynamic APP_URL)
-│   └── api/scrape-yad2/route.ts  ← POST: Yad2 + yad-il scraper API
+│   └── api/
+│       ├── scrape-yad2/route.ts      ← POST: Yad2 + yad-il scraper API
+│       └── parse-screenshot/route.ts ← POST: Gemini Vision screenshot extraction
 ├── components/
 │   ├── Navbar.tsx                ← Sticky header: household info, user menu, add button
 │   ├── FilterToolbar.tsx         ← Filters: search, room range, sort, reaction pills
@@ -164,7 +166,7 @@ AS $$ SELECT household_id FROM public.profiles WHERE id = auth.uid() $$;
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon JWT |
 | `NEXT_PUBLIC_APP_PASSWORD` | Gate password for signup |
 | `APP_PASSWORD` | Server-side reference |
-| `YAD2_COOKIES` | Browser cookies for Yad2 scraping (`.env.local` only) |
+| `GEMINI_API_KEY` | Gemini Vision API key (server-side only) |
 
 ---
 
@@ -256,6 +258,19 @@ AS $$ SELECT household_id FROM public.profiles WHERE id = auth.uid() $$;
 - [x] Popup price unit per category (/month, /night, blank for cars)
 - [x] Rooms badge shown only when data exists
 
+### v2.3 — AI Screenshot Extraction (Gemini Vision)
+
+- [x] **`/api/parse-screenshot` route** — POST endpoint accepts `FormData` (image + category)
+- [x] **Gemini Vision** (`gemini-3.6-flash`) — multimodal model reads screenshot and returns structured JSON
+- [x] **Dynamic prompts** — category-specific prompt shapes: apartment/venue gets `{title, price, rooms, phone, seller_name}`, car gets `{title, price, year, mileage, phone, seller_name}`
+- [x] **Robust JSON parsing** — strips markdown fences from Gemini response, graceful error handling
+- [x] **Screenshot upload** — file simultaneously uploaded to Supabase Storage `item-images` bucket, becomes hero image
+- [x] **Non-destructive merge** — extracted fields only fill empty form fields, never overwrite user-typed data
+- [x] **Purple UI panel** — "AI Extract from Screenshot 🪄" section above URL field in modal
+- [x] **Success/error banner** — dismissible inline feedback after extraction
+- [x] **Car metadata** — year and mileage fields populated into `metadata` JSONB
+- [x] **`GEMINI_API_KEY`** — server-side only env var, never exposed to client
+
 ---
 
 ## SQL Migrations
@@ -303,8 +318,6 @@ Push to `main` → Vercel auto-deploys.
 - [ ] Re-enable RLS with proper auth token flow
 - [ ] Toast notifications for actions
 - [ ] Leave household option
-
-### v3.0
 - [ ] Multiple households per user
 - [ ] Push notifications for new items
 - [ ] Facebook Marketplace scraper

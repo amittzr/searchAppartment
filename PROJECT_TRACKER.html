@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GroupPick — Project Tracker v2.2</title>
+  <title>GroupPick — Project Tracker v2.3</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.6; padding: 2rem 1rem; }
@@ -51,15 +51,39 @@
     <p>Collaborative decision-making app for couples — track apartments, venues, cars & more together</p>
     <div class="header-meta">
       <span class="badge">✅ Live</span>
-      <span class="badge badge-new">v2.2</span>
+      <span class="badge badge-new">v2.3</span>
       <span class="badge">Next.js 15</span>
       <span class="badge">Supabase Auth</span>
       <span class="badge">Multi-Category</span>
+      <span class="badge">Gemini Vision</span>
       <span class="badge">September 2026</span>
     </div>
   </div>
 
-  <!-- What's New in v2.2 -->
+  <!-- What's New in v2.3 -->
+  <div class="highlight-box">
+    <h3>🤖 What's New in v2.3 — AI Screenshot Extraction</h3>
+    <div class="two-col">
+      <div>
+        <strong>Gemini Vision API</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>gemini-3.6-flash model</li>
+          <li>Dynamic prompts per category</li>
+          <li>JSON extraction from any screenshot</li>
+          <li>Markdown fence stripping + error handling</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Smart UX</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>Purple "Extract 🪄" panel in modal</li>
+          <li>Non-destructive field merge</li>
+          <li>Screenshot → Supabase Storage hero image</li>
+          <li>Success/error inline banner</li>
+        </ul>
+      </div>
+    </div>
+  </div>
   <div class="highlight-box">
     <h3>🚀 What's New in v2.2</h3>
     <div class="two-col">
@@ -109,6 +133,19 @@
         <tr><td>Deployment</td><td>Vercel</td><td>—</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🤖 Features v2.3 — AI Screenshot Extraction</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>Gemini Vision API</strong> — <code>gemini-3.6-flash</code> multimodal model reads screenshots and returns structured JSON</li>
+      <li class="new"><span>✅</span> <strong>Dynamic prompts</strong> — category-specific extraction: apartment/venue gets title/price/rooms/phone, car gets title/price/year/mileage/phone</li>
+      <li class="new"><span>✅</span> <strong>Screenshot → hero image</strong> — uploaded to Supabase Storage <code>item-images</code> bucket and set as cover image</li>
+      <li class="new"><span>✅</span> <strong>Non-destructive merge</strong> — AI fields only fill empty inputs, never overwrite user-typed data</li>
+      <li class="new"><span>✅</span> <strong>Purple UI panel</strong> — "AI Extract from Screenshot 🪄" section in Add/Edit modal</li>
+      <li class="new"><span>✅</span> <strong>Robust error handling</strong> — strips markdown fences from Gemini response, inline success/error banner</li>
+      <li class="new"><span>✅</span> <strong>Secure</strong> — <code>GEMINI_API_KEY</code> server-side only, never exposed to client</li>
+    </ul>
   </div>
 
   <div class="section">
@@ -289,6 +326,7 @@
     <table>
       <thead><tr><th>Date</th><th>Version</th><th>Changes</th></tr></thead>
       <tbody>
+        <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.3</span></td><td><strong>AI Screenshot Extraction:</strong> Gemini Vision API, dynamic prompts per category, screenshot → hero image, non-destructive form merge</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.2</span></td><td><strong>Room filter:</strong> half-rooms, range UI, orange connected pills. <strong>Map:</strong> all categories, category-aware labels and price units</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.1</span></td><td><strong>Scraper:</strong> yad-il.co.il, multi-query scan, phone API. <strong>Notes:</strong> threaded JSONB chat. <strong>Images:</strong> Supabase Storage uploads. <strong>Read receipts:</strong> viewed_by + NEW badge</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.0</span></td><td><strong>GroupPick:</strong> Supabase Auth, households, profiles, multi-category, invite codes, dynamic forms</td></tr>
@@ -313,7 +351,7 @@
     </ul>
   </div>
 
-  <div class="footer">GroupPick · v2.2 · September 2026 · Next.js + Supabase Auth + Multi-Category + Range Filter</div>
+  <div class="footer">GroupPick · v2.3 · September 2026 · Next.js + Supabase Auth + Gemini Vision AI</div>
 
 </div>
 </body>
