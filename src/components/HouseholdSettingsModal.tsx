@@ -40,7 +40,7 @@ export default function HouseholdSettingsModal({
   const [codeError, setCodeError] = useState<string | null>(null);
 
   // PWA install state
-  const { isInstallable, isIOS, isInstalled, promptInstall } = usePWAInstall();
+  const { isInstallable, isIOS, isAndroid, isInstalled, promptInstall } = usePWAInstall();
 
   // Close on Escape key
   const handleKeyDown = useCallback(
@@ -305,7 +305,7 @@ export default function HouseholdSettingsModal({
             )}
 
             {/* ── Install App ──────────────────────────────────────────── */}
-            {(isInstalled || isInstallable || isIOS) && (
+            {(isInstalled || isInstallable || isIOS || isAndroid) && (
               <div className="flex flex-col gap-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                   Install App
@@ -319,7 +319,7 @@ export default function HouseholdSettingsModal({
                   </div>
                 )}
 
-                {/* Android / Chrome — native prompt */}
+                {/* Android — native prompt available */}
                 {!isInstalled && isInstallable && (
                   <button
                     type="button"
@@ -329,6 +329,30 @@ export default function HouseholdSettingsModal({
                     <Download className="w-4 h-4" />
                     📱 Install App
                   </button>
+                )}
+
+                {/* Android — prompt not yet available, show manual instructions */}
+                {!isInstalled && isAndroid && !isInstallable && (
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-sm">
+                    <p className="font-semibold mb-2 flex items-center gap-1.5">
+                      <Download className="w-4 h-4" />
+                      Add to Home Screen
+                    </p>
+                    <ol className="flex flex-col gap-1.5 text-slate-600 text-xs">
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold flex-shrink-0">1.</span>
+                        <span>Tap the <strong>⋮ menu</strong> (3 dots) in Chrome's top-right corner</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold flex-shrink-0">2.</span>
+                        <span>Tap <strong>"Add to Home screen"</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold flex-shrink-0">3.</span>
+                        <span>Tap <strong>Add</strong> — the app opens full-screen like a native app</span>
+                      </li>
+                    </ol>
+                  </div>
                 )}
 
                 {/* iOS — manual instructions */}
@@ -349,14 +373,11 @@ export default function HouseholdSettingsModal({
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="font-bold flex-shrink-0">2.</span>
-                        <span>
-                          Scroll down and tap{" "}
-                          <strong>"Add to Home Screen"</strong>
-                        </span>
+                        <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="font-bold flex-shrink-0">3.</span>
-                        <span>Tap <strong>Add</strong> — the app will open full-screen with no browser bar</span>
+                        <span>Tap <strong>Add</strong> — opens full-screen with no browser bar</span>
                       </li>
                     </ol>
                   </div>

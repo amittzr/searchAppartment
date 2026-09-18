@@ -60,7 +60,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // data-scroll-behavior suppresses Next.js warning about smooth scroll
     <html lang="he" dir="ltr" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         {/* Preconnect to Google Fonts for faster Inter font load */}
@@ -69,6 +68,20 @@ export default function RootLayout({
           rel="preconnect"
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
+        />
+        {/* Register service worker — required for Android PWA install prompt */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(function(reg) { console.log('[SW] Registered:', reg.scope); })
+                    .catch(function(err) { console.warn('[SW] Registration failed:', err); });
+                });
+              }
+            `,
+          }}
         />
       </head>
       <body className="antialiased">{children}</body>
