@@ -11,6 +11,7 @@ import ApartmentModal from "@/components/ApartmentModal";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import HouseholdSettingsModal from "@/components/HouseholdSettingsModal";
 import MapView from "@/components/MapView";
+import ChecklistModal from "@/components/ChecklistModal";
 import { HouseholdProvider, useHousehold } from "@/contexts/HouseholdContext";
 
 import { useApartments } from "@/hooks/useApartments";
@@ -113,6 +114,7 @@ function DashboardContent() {
   const [bookmarkletData, setBookmarkletData] = useState<Partial<ApartmentFormData> | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [checklistApartment, setChecklistApartment] = useState<Apartment | null>(null);
 
   // Check for bookmarklet auto-fill params on mount
   useEffect(() => {
@@ -219,6 +221,18 @@ function DashboardContent() {
   const handleReactionChange = async (apartmentId: string, reaction: ReactionStatus | null) => {
     const { error: reactionError } = await setReaction(apartmentId, reaction);
     if (reactionError) setActionError(reactionError);
+  };
+
+  // Open checklist modal for a specific apartment
+  const handleChecklist = (apartment: Apartment) => {
+    setChecklistApartment(apartment);
+  };
+
+  // Called by ChecklistModal after a successful save — update local state
+  const handleChecklistSaved = (id: string, data: import("@/types/database").ChecklistData) => {
+    setChecklistApartment((prev) =>
+      prev?.id === id ? { ...prev, checklist_data: data } : prev
+    );
   };
 
   // Two-step delete: first click sets the confirm ID, second click confirms
@@ -341,6 +355,7 @@ function DashboardContent() {
                 onDelete={handleDeleteRequest}
                 onReactionChange={handleReactionChange}
                 onMarkViewed={markAsViewed}
+                onChecklist={handleChecklist}
               />
             ))}
           </div>
@@ -362,6 +377,16 @@ function DashboardContent() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+
+      {/* ── Checklist Modal ──────────────────────────────────────────────────── */}
+      {checklistApartment && (
+        <ChecklistModal
+          apartment={checklistApartment}
+          isOpen={true}
+          onClose={() => setChecklistApartment(null)}
+          onSaved={handleChecklistSaved}
+        />
+      )}
 
       {/* ── Map View ────────────────────────────────────────────────────────────── */}
       {isMapOpen && (

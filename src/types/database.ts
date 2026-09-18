@@ -59,6 +59,20 @@ export interface ProfileUpdate {
   updated_at?: string;
 }
 
+// ── Checklist Types ──────────────────────────────────────────
+export interface ChecklistItem {
+  id:      string;
+  text:    string;
+  checked: boolean;
+}
+
+export interface ChecklistCategory {
+  category: string;
+  items:    ChecklistItem[];
+}
+
+export type ChecklistData = ChecklistCategory[];
+
 // ── Note Thread Types ────────────────────────────────────────
 export interface NoteEntry {
   userId:    string;
@@ -115,6 +129,7 @@ export interface Item {
   metadata: ItemMetadata;
   notes: NotesThread | null;
   viewed_by: string[];       // Array of user IDs who have seen this item
+  checklist_data: ChecklistData | null; // Physical inspection checklist state
   latitude: number | null;
   longitude: number | null;
   status: ApartmentStatus;  // Legacy field
@@ -141,6 +156,7 @@ export interface ItemInsert {
   metadata?: ItemMetadata;
   notes?: NotesThread | null;
   viewed_by?: string[];
+  checklist_data?: ChecklistData | null;
   latitude?: number | null;
   longitude?: number | null;
   status?: ApartmentStatus;
@@ -165,6 +181,7 @@ export interface ItemUpdate {
   metadata?: ItemMetadata;
   notes?: NotesThread | null;
   viewed_by?: string[];
+  checklist_data?: ChecklistData | null;
   latitude?: number | null;
   longitude?: number | null;
   status?: ApartmentStatus;

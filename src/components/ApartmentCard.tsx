@@ -21,6 +21,7 @@ import {
   Fuel,
   Calendar,
   Gauge,
+  ListChecks,
 } from "lucide-react";
 import type { Apartment, ReactionStatus, CategoryType, ItemMetadata, CarMetadata, BrideVenueMetadata, ApartmentMetadata, NotesThread } from "@/types/database";
 import { useHousehold } from "@/contexts/HouseholdContext";
@@ -32,6 +33,7 @@ interface ApartmentCardProps {
   onDelete: (id: string) => void;
   onReactionChange: (id: string, reaction: ReactionStatus | null) => void;
   onMarkViewed: (id: string) => void;
+  onChecklist: (apartment: Apartment) => void;
 }
 
 // ── Reaction configuration ───────────────────────────────────────────────────
@@ -113,6 +115,7 @@ export default function ApartmentCard({
   onDelete,
   onReactionChange,
   onMarkViewed,
+  onChecklist,
 }: ApartmentCardProps) {
   const { username, partnerName, members, category, categoryConfig, profile } = useHousehold();
   
@@ -124,6 +127,17 @@ export default function ApartmentCard({
   const isUnread = currentUserId
     ? !(apartment.viewed_by ?? []).includes(currentUserId)
     : false;
+
+  // Checklist completion summary for the icon badge
+  const checklistProgress = (() => {
+    const data = apartment.checklist_data;
+    if (!data || data.length === 0) return null;
+    let total = 0; let checked = 0;
+    for (const cat of data) {
+      for (const item of cat.items) { total++; if (item.checked) checked++; }
+    }
+    return total > 0 ? Math.round((checked / total) * 100) : null;
+  })();
   
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -483,6 +497,27 @@ export default function ApartmentCard({
                     <Pencil className="w-4 h-4" />
                     Edit
                   </button>
+
+                  {/* Checklist button in expanded view */}
+                  <button
+                    onClick={() => {
+                      setIsExpanded(false);
+                      onChecklist(apartment);
+                    }}
+                    className="relative flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-violet-600 hover:border-violet-300 bg-white transition-colors text-sm font-medium"
+                  >
+                    <ListChecks className="w-4 h-4" />
+                    Checklist
+                    {checklistProgress !== null && (
+                      <span className={`
+                        text-xs font-bold px-1.5 py-0.5 rounded-full
+                        ${checklistProgress === 100 ? "bg-green-100 text-green-700" : "bg-violet-100 text-violet-700"}
+                      `}>
+                        {checklistProgress === 100 ? "✓" : `${checklistProgress}%`}
+                      </span>
+                    )}
+                  </button>
+
                   <button
                     onClick={() => {
                       setIsExpanded(false);
@@ -690,6 +725,28 @@ export default function ApartmentCard({
               className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-brand-600 hover:border-brand-300 bg-white transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
+            </button>
+
+            {/* Checklist button — shows progress badge if checklist was started */}
+            <button
+              onClick={() => onChecklist(apartment)}
+              aria-label="Inspection checklist"
+              title="Inspection checklist"
+              className="relative flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-violet-600 hover:border-violet-300 bg-white transition-colors"
+            >
+              <ListChecks className="w-3.5 h-3.5" strokeWidth={2} />
+              {checklistProgress !== null && (
+                <span className={`
+                  absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5
+                  rounded-full text-[9px] font-bold flex items-center justify-center
+                  ${checklistProgress === 100
+                    ? "bg-green-500 text-white"
+                    : "bg-violet-500 text-white"
+                  }
+                `}>
+                  {checklistProgress === 100 ? "✓" : `${checklistProgress}%`}
+                </span>
+              )}
             </button>
 
             <button

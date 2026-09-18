@@ -74,10 +74,11 @@ export function useApartments(): UseApartmentsReturn {
       // Ensure reactions, metadata, notes and viewed_by fields are correctly typed
       const normalized = (data ?? []).map((apt: any) => ({
         ...apt,
-        reactions: apt.reactions ?? {},
-        metadata:  apt.metadata  ?? {},
-        notes:     Array.isArray(apt.notes)     ? apt.notes     : [],
-        viewed_by: Array.isArray(apt.viewed_by) ? apt.viewed_by : [],
+        reactions:      apt.reactions      ?? {},
+        metadata:       apt.metadata       ?? {},
+        notes:          Array.isArray(apt.notes)     ? apt.notes     : [],
+        viewed_by:      Array.isArray(apt.viewed_by) ? apt.viewed_by : [],
+        checklist_data: apt.checklist_data ?? null,
       })) as Apartment[];
       setApartments(normalized);
     }
