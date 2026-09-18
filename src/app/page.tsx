@@ -228,9 +228,11 @@ function DashboardContent() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteConfirmId) return;
-    const { error: deleteError } = await deleteApartment(deleteConfirmId);
+    // Close dialog immediately — item is already removed from UI optimistically
+    const idToDelete = deleteConfirmId;
     setDeleteConfirmId(null);
-    if (deleteError) setActionError(deleteError);
+    const { error: deleteError } = await deleteApartment(idToDelete);
+    if (deleteError) setActionError(`Delete failed: ${deleteError}. The item has been restored.`);
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────

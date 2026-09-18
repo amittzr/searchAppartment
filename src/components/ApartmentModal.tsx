@@ -84,7 +84,7 @@ export default function ApartmentModal({
   // Screenshot AI extraction state
   const [screenshotExtracting, setScreenshotExtracting] = useState(false);
   const [screenshotBanner, setScreenshotBanner]         = useState<{
-    type: "success" | "error";
+    type: "success" | "error" | "warning";
     message: string;
   } | null>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
@@ -287,15 +287,23 @@ export default function ApartmentModal({
         body: extractFormData,
       });
 
-      const extractData = await extractRes.json();
+      const extractResponse = await extractRes.json();
 
-      if (!extractRes.ok) {
+      if (!extractRes.ok || !extractResponse.success) {
+        // Distinguish between high demand (amber warning) and hard errors (red)
+        const isHighDemand = extractResponse.error === "high_demand" || extractRes.status === 503;
         setScreenshotBanner({
-          type: "error",
-          message: extractData.error ?? "AI extraction failed. Try a clearer screenshot.",
+          type:    isHighDemand ? "warning" : "error",
+          message: extractResponse.message
+            ?? (isHighDemand
+              ? "The AI service is temporarily busy. Please wait a moment and try again."
+              : "AI extraction failed. Try a clearer screenshot."),
         });
         return;
       }
+
+      // Success — data lives in extractResponse.data
+      const extractData = extractResponse.data;
 
       // ── Step 2: Upload screenshot to Supabase Storage ──────────────────
       const { urls: uploadedUrls, errors: uploadErrs } = await uploadImages(
@@ -499,7 +507,7 @@ export default function ApartmentModal({
                 {screenshotExtracting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Extracting with AI…
+                    Analyzing with AI…
                   </>
                 ) : (
                   <>
@@ -515,11 +523,15 @@ export default function ApartmentModal({
                   flex items-start gap-2 px-3 py-2 rounded-lg text-xs font-medium
                   ${screenshotBanner.type === "success"
                     ? "bg-green-50 border border-green-200 text-green-700"
+                    : screenshotBanner.type === "warning"
+                    ? "bg-amber-50 border border-amber-300 text-amber-700"
                     : "bg-red-50 border border-red-200 text-red-700"
                   }
                 `}>
                   {screenshotBanner.type === "success"
                     ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                    : screenshotBanner.type === "warning"
+                    ? <AlertCircle  className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-500" />
                     : <AlertCircle  className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                   }
                   <span className="flex-1">{screenshotBanner.message}</span>

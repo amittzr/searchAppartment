@@ -125,3 +125,78 @@ export async function deleteImage(path: string): Promise<{ error: string | null 
   const { error } = await supabase.storage.from(BUCKET).remove([path]);
   return { error: error?.message ?? null };
 }
+
+// ── Storage path extraction ───────────────────────────────────────────────────
+
+/**
+ * The public URL prefix for our Supabase Storage bucket.
+ * Any image URL starting with this prefix is an internally uploaded file.
+ */
+function getStorageUrlPrefix(): string {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  return `${supabaseUrl}/storage/v1/object/public/${BUCKET}/`;
+}
+
+/**
+ * Extracts the relative storage path from a full Supabase Storage public URL.
+ * Returns null if the URL is external (e.g. Yad2 CDN, Facebook, etc.)
+ *
+ * Example:
+ *   Input:  "https://xyz.supabase.co/storage/v1/object/public/item-images/abc/file.jpg"
+ *   Output: "abc/file.jpg"
+ */
+export function extractStoragePath(url: string): string | null {
+  if (!url) return null;
+  const prefix = getStorageUrlPrefix();
+  if (!prefix || !url.startsWith(prefix)) return null;
+  return url.slice(prefix.length);
+}
+
+/**
+ * Extracts all internal Supabase Storage paths from an item's image fields.
+ * Filters out external URLs (Yad2, Facebook, etc.) and returns only paths
+ * that can be passed to `supabase.storage.from(BUCKET).remove(paths)`.
+ *
+ * @param imageUrl  - The hero image URL (may be null)
+ * @param images    - The full images array (may be null/empty)
+ */
+export function extractStoragePathsFromItem(
+  imageUrl: string | null | undefined,
+  images:   string[] | null | undefined
+): string[] {
+  const allUrls = new Set<string>();
+
+  if (imageUrl) allUrls.add(imageUrl);
+  (images ?? []).forEach((u) => { if (u) allUrls.add(u); });
+
+  const paths: string[] = [];
+  for (const url of allUrls) {
+    const path = extractStoragePath(url);
+    if (path) paths.push(path);
+  }
+
+  return paths;
+}
+
+/**
+ * Deletes all Supabase Storage files associated with an item.
+ * Silently ignores external URLs and handles empty arrays gracefully.
+ * Errors are logged but not thrown — storage cleanup is best-effort.
+ */
+export async function deleteItemImages(
+  imageUrl: string | null | undefined,
+  images:   string[] | null | undefined
+): Promise<void> {
+  const paths = extractStoragePathsFromItem(imageUrl, images);
+  if (paths.length === 0) return;
+
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.storage.from(BUCKET).remove(paths);
+
+  if (error) {
+    // Non-fatal: log but do not block the DB deletion
+    console.warn(`[upload-images] Storage cleanup failed for paths [${paths.join(", ")}]:`, error.message);
+  } else {
+    console.log(`[upload-images] Deleted ${paths.length} file(s) from storage.`);
+  }
+}

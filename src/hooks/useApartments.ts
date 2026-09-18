@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { useHousehold } from "@/contexts/HouseholdContext";
+import { deleteItemImages } from "@/lib/upload-images";
 import type {
   Item,
   ItemInsert,
@@ -201,23 +202,61 @@ export function useApartments(): UseApartmentsReturn {
     [supabase, householdId]
   );
 
-  // ── Delete ──────────────────────────────────────────────────────────────────
+  // ── Delete — optimistic UI + storage cleanup ────────────────────────────────
   const deleteApartment = useCallback(
     async (id: string): Promise<{ error: string | null }> => {
       if (!householdId) {
         return { error: "No household selected" };
       }
 
-      const { error: deleteError } = await (supabase
-        .from("apartments") as any)
-        .delete()
-        .eq("id", id)
-        .eq("household_id", householdId); // RLS will also enforce this
+      // ── Step 1: snapshot the item before removing it from local state ────
+      const itemToDelete = apartments.find((apt) => apt.id === id);
 
-      if (deleteError) return { error: deleteError.message };
-      return { error: null };
+      // ── Step 2: optimistic removal — remove instantly from UI ────────────
+      setApartments((prev) => prev.filter((apt) => apt.id !== id));
+
+      try {
+        // ── Step 3: delete physical images from Supabase Storage ──────────
+        // This is best-effort — a storage failure does NOT block DB deletion
+        if (itemToDelete) {
+          await deleteItemImages(itemToDelete.image_url, itemToDelete.images);
+        }
+
+        // ── Step 4: delete the database row ───────────────────────────────
+        const { error: deleteError } = await (supabase
+          .from("apartments") as any)
+          .delete()
+          .eq("id", id)
+          .eq("household_id", householdId);
+
+        if (deleteError) {
+          // ── Step 5: rollback — restore the item to local state ────────
+          if (itemToDelete) {
+            setApartments((prev) => {
+              // Re-insert at the correct position (top of list / original order)
+              // Simple approach: prepend and let realtime sort handle it
+              const alreadyExists = prev.some((apt) => apt.id === id);
+              return alreadyExists ? prev : [itemToDelete, ...prev];
+            });
+          }
+          return { error: deleteError.message };
+        }
+
+        return { error: null };
+
+      } catch (err) {
+        // ── Rollback on unexpected errors ─────────────────────────────────
+        if (itemToDelete) {
+          setApartments((prev) => {
+            const alreadyExists = prev.some((apt) => apt.id === id);
+            return alreadyExists ? prev : [itemToDelete, ...prev];
+          });
+        }
+        const message = err instanceof Error ? err.message : "Unexpected error during deletion";
+        return { error: message };
+      }
     },
-    [supabase, householdId]
+    [supabase, householdId, apartments]
   );
 
   // ── Legacy status toggle (kept for backward compatibility) ──────────────────
