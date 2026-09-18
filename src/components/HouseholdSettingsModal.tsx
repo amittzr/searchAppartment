@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Users, User, Home, Copy, Check, LogOut, Pencil, Save, Loader2 } from "lucide-react";
+import { X, Users, User, Home, Copy, Check, LogOut, Pencil, Save, Loader2, Download, Share, CheckCircle2 } from "lucide-react";
 import { useHousehold } from "@/contexts/HouseholdContext";
 import { getSupabaseClient } from "@/lib/supabase-client";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 // ============================================================
 // Household Settings Modal
@@ -37,6 +38,9 @@ export default function HouseholdSettingsModal({
   const [newInviteCode, setNewInviteCode] = useState("");
   const [savingCode, setSavingCode] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
+
+  // PWA install state
+  const { isInstallable, isIOS, isInstalled, promptInstall } = usePWAInstall();
 
   // Close on Escape key
   const handleKeyDown = useCallback(
@@ -297,6 +301,66 @@ export default function HouseholdSettingsModal({
                     </p>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ── Install App ──────────────────────────────────────────── */}
+            {(isInstalled || isInstallable || isIOS) && (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Install App
+                </p>
+
+                {/* Already installed */}
+                {isInstalled && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                    <span>App is installed ✅</span>
+                  </div>
+                )}
+
+                {/* Android / Chrome — native prompt */}
+                {!isInstalled && isInstallable && (
+                  <button
+                    type="button"
+                    onClick={promptInstall}
+                    className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 active:scale-95 transition-all shadow-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    📱 Install App
+                  </button>
+                )}
+
+                {/* iOS — manual instructions */}
+                {!isInstalled && isIOS && (
+                  <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-800 text-sm">
+                    <p className="font-semibold mb-2 flex items-center gap-1.5">
+                      <Home className="w-4 h-4" />
+                      Add to Home Screen
+                    </p>
+                    <ol className="flex flex-col gap-1.5 text-sky-700 text-xs">
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold flex-shrink-0">1.</span>
+                        <span>
+                          Tap the{" "}
+                          <Share className="w-3.5 h-3.5 inline-block mx-0.5 -mt-0.5" />
+                          <strong> Share</strong> button at the bottom of Safari
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold flex-shrink-0">2.</span>
+                        <span>
+                          Scroll down and tap{" "}
+                          <strong>"Add to Home Screen"</strong>
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold flex-shrink-0">3.</span>
+                        <span>Tap <strong>Add</strong> — the app will open full-screen with no browser bar</span>
+                      </li>
+                    </ol>
+                  </div>
+                )}
               </div>
             )}
 
