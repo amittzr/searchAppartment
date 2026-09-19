@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Users, User, Home, Copy, Check, LogOut, Pencil, Save, Loader2, Download, Share, CheckCircle2 } from "lucide-react";
+import {
+  X, Users, User, Home, Copy, Check, LogOut, Pencil, Save, Loader2,
+  Download, Share, CheckCircle2, Bell, BellOff, BellRing,
+} from "lucide-react";
 import { useHousehold } from "@/contexts/HouseholdContext";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // ============================================================
 // Household Settings Modal
@@ -41,6 +45,17 @@ export default function HouseholdSettingsModal({
 
   // PWA install state
   const { isInstallable, isIOS, isAndroid, isInstalled, promptInstall } = usePWAInstall();
+
+  // Push notification state
+  const {
+    isSupported:  pushSupported,
+    isSubscribed: pushSubscribed,
+    isLoading:    pushLoading,
+    error:        pushError,
+    permission:   pushPermission,
+    subscribe:    pushSubscribe,
+    unsubscribe:  pushUnsubscribe,
+  } = usePushNotifications();
 
   // Close on Escape key
   const handleKeyDown = useCallback(
@@ -381,6 +396,74 @@ export default function HouseholdSettingsModal({
                       </li>
                     </ol>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Notifications ────────────────────────────────────────── */}
+            {pushSupported && (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Notifications
+                </p>
+
+                {/* Blocked state */}
+                {pushPermission === "denied" ? (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+                    <BellOff className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold">Notifications blocked</p>
+                      <p className="text-xs text-amber-600 mt-0.5">
+                        Enable them in your browser settings, then reload the page.
+                      </p>
+                    </div>
+                  </div>
+                ) : pushSubscribed ? (
+                  /* Subscribed state — show disable button */
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 border border-green-200">
+                    <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
+                      <BellRing className="w-4 h-4" />
+                      Notifications enabled 🔔
+                    </div>
+                    <button
+                      type="button"
+                      onClick={pushUnsubscribe}
+                      disabled={pushLoading}
+                      className="text-xs text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {pushLoading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <BellOff className="w-3.5 h-3.5" />
+                      )}
+                      Turn off
+                    </button>
+                  </div>
+                ) : (
+                  /* Not subscribed — show enable button */
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={pushSubscribe}
+                      disabled={pushLoading}
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 active:scale-95 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {pushLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Bell className="w-4 h-4" />
+                      )}
+                      {pushLoading ? "Enabling…" : "Enable Notifications 🔔"}
+                    </button>
+                    <p className="text-xs text-slate-400 text-center">
+                      Get notified when your partner adds a new item
+                    </p>
+                  </div>
+                )}
+
+                {/* Push error banner */}
+                {pushError && (
+                  <p className="text-xs text-red-500 px-1">{pushError}</p>
                 )}
               </div>
             )}

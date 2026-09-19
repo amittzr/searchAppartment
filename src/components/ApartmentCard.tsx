@@ -504,17 +504,21 @@ export default function ApartmentCard({
                       setIsExpanded(false);
                       onChecklist(apartment);
                     }}
-                    className="relative flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-violet-600 hover:border-violet-300 bg-white transition-colors text-sm font-medium"
+                    className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-violet-600 hover:border-violet-300 bg-white transition-colors text-sm font-medium"
                   >
-                    <ListChecks className="w-4 h-4" />
-                    Checklist
+                    <div className="flex items-center gap-2">
+                      <ListChecks className="w-4 h-4" />
+                      Checklist
+                    </div>
                     {checklistProgress !== null && (
-                      <span className={`
-                        text-xs font-bold px-1.5 py-0.5 rounded-full
-                        ${checklistProgress === 100 ? "bg-green-100 text-green-700" : "bg-violet-100 text-violet-700"}
-                      `}>
-                        {checklistProgress === 100 ? "✓" : `${checklistProgress}%`}
-                      </span>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            checklistProgress === 100 ? "bg-green-500" : "bg-violet-500"
+                          }`}
+                          style={{ width: `${checklistProgress}%` }}
+                        />
+                      </div>
                     )}
                   </button>
 
@@ -727,27 +731,29 @@ export default function ApartmentCard({
               <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
             </button>
 
-            {/* Checklist button — shows progress badge if checklist was started */}
-            <button
-              onClick={() => onChecklist(apartment)}
-              aria-label="Inspection checklist"
-              title="Inspection checklist"
-              className="relative flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-violet-600 hover:border-violet-300 bg-white transition-colors"
-            >
-              <ListChecks className="w-3.5 h-3.5" strokeWidth={2} />
+            {/* Checklist button — mini progress bar below icon if checklist started */}
+            <div className="flex flex-col items-center gap-0.5">
+              <button
+                onClick={() => onChecklist(apartment)}
+                aria-label="Inspection checklist"
+                title="Inspection checklist"
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-violet-600 hover:border-violet-300 bg-white transition-colors"
+              >
+                <ListChecks className="w-3.5 h-3.5" strokeWidth={2} />
+              </button>
+
+              {/* Mini progress bar — only shown when checklist has been started */}
               {checklistProgress !== null && (
-                <span className={`
-                  absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5
-                  rounded-full text-[9px] font-bold flex items-center justify-center
-                  ${checklistProgress === 100
-                    ? "bg-green-500 text-white"
-                    : "bg-violet-500 text-white"
-                  }
-                `}>
-                  {checklistProgress === 100 ? "✓" : `${checklistProgress}%`}
-                </span>
+                <div className="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      checklistProgress === 100 ? "bg-green-500" : "bg-violet-500"
+                    }`}
+                    style={{ width: `${checklistProgress}%` }}
+                  />
+                </div>
               )}
-            </button>
+            </div>
 
             <button
               onClick={() => onDelete(apartment.id)}

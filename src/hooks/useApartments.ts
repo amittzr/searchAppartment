@@ -179,6 +179,25 @@ export function useApartments(): UseApartmentsReturn {
         .insert(insertData as object);
 
       if (insertError) return { error: insertError.message };
+
+      // Fire-and-forget push notification to other group members.
+      // We do this client-side by calling the API route directly.
+      // Non-blocking: push failure does NOT block the item from being saved.
+      if (householdId && user?.id) {
+        fetch("/api/push/notify-new-item", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({
+            groupId:       householdId,
+            excludeUserId: user.id,
+            title:         insertData.title,
+            itemId:        undefined, // will be filled server-side after insert
+          }),
+        }).catch((err) => {
+          console.warn("[useApartments] Push notification failed (non-blocking):", err);
+        });
+      }
+
       return { error: null };
     },
     [supabase, householdId, category]
