@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GroupPick — Project Tracker v2.3</title>
+  <title>GroupPick — Project Tracker v3.0</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.6; padding: 2rem 1rem; }
@@ -51,35 +51,54 @@
     <p>Collaborative decision-making app for couples — track apartments, venues, cars & more together</p>
     <div class="header-meta">
       <span class="badge">✅ Live</span>
-      <span class="badge badge-new">v2.3</span>
+      <span class="badge badge-new">v3.0</span>
       <span class="badge">Next.js 15</span>
       <span class="badge">Supabase Auth</span>
-      <span class="badge">Multi-Category</span>
       <span class="badge">Gemini Vision</span>
+      <span class="badge">PWA</span>
+      <span class="badge">Web Push</span>
       <span class="badge">September 2026</span>
     </div>
   </div>
 
-  <!-- What's New in v2.3 -->
+  <!-- What's New in v3.0 -->
   <div class="highlight-box">
-    <h3>🤖 What's New in v2.3 — AI Screenshot Extraction</h3>
+    <h3>🚀 What's New in v3.0</h3>
     <div class="two-col">
       <div>
-        <strong>Gemini Vision API</strong>
+        <strong>Web Push Notifications</strong>
         <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
-          <li>gemini-3.6-flash model</li>
-          <li>Dynamic prompts per category</li>
-          <li>JSON extraction from any screenshot</li>
-          <li>Markdown fence stripping + error handling</li>
+          <li>Instant push when partner adds item</li>
+          <li>48h smart reminder for unreacted items</li>
+          <li>VAPID + web-push, group-isolated</li>
+          <li>Auto-cleanup of expired subscriptions</li>
         </ul>
       </div>
       <div>
-        <strong>Smart UX</strong>
+        <strong>PWA — Install as Native App</strong>
         <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
-          <li>Purple "Extract 🪄" panel in modal</li>
-          <li>Non-destructive field merge</li>
-          <li>Screenshot → Supabase Storage hero image</li>
-          <li>Success/error inline banner</li>
+          <li>manifest.ts with icons + standalone mode</li>
+          <li>Service worker with auto-update</li>
+          <li>iOS + Android install instructions in Settings</li>
+          <li>Native install prompt for Android/Chrome</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Physical Inspection Checklist</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>📋 icon on every card → opens modal</li>
+          <li>3 Hebrew categories, 15 items total</li>
+          <li>Optimistic toggle + auto-save to Supabase</li>
+          <li>Progress bar on icon + in modal</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Cron Job Reminders</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>Vercel Cron at 09:00 UTC daily</li>
+          <li>Finds items 48h+ old, no reactions</li>
+          <li>Pushes to all group members</li>
+          <li>CRON_SECRET bearer token auth</li>
         </ul>
       </div>
     </div>
@@ -133,6 +152,49 @@
         <tr><td>Deployment</td><td>Vercel</td><td>—</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔔 Features v3.0 — Web Push Notifications</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>push_subscriptions table</strong> — user_id, group_id, subscription JSONB, unique index per endpoint, RLS policies</li>
+      <li class="new"><span>✅</span> <strong>VAPID keys</strong> — web-push library, NEXT_PUBLIC_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY env vars</li>
+      <li class="new"><span>✅</span> <strong>send-push.ts helper</strong> — broadcasts to all group members, excludes sender, auto-deletes 410 Gone subscriptions</li>
+      <li class="new"><span>✅</span> <strong>GET /api/push/vapid-key</strong> — returns public VAPID key to browser SW</li>
+      <li class="new"><span>✅</span> <strong>POST /api/push/subscribe</strong> — saves/removes push subscription tied to household group_id</li>
+      <li class="new"><span>✅</span> <strong>POST /api/push/notify-new-item</strong> — triggered by client after item insert, broadcasts push to other members</li>
+      <li class="new"><span>✅</span> <strong>GET /api/cron/check-reminders</strong> — finds items 48h+ with no reactions, sends reminder push, updates last_reminder_sent_at</li>
+      <li class="new"><span>✅</span> <strong>vercel.json cron</strong> — runs check-reminders at 09:00 UTC daily</li>
+      <li class="new"><span>✅</span> <strong>usePushNotifications hook</strong> — subscribe/unsubscribe lifecycle with permission state machine</li>
+      <li class="new"><span>✅</span> <strong>Settings UI</strong> — Enable/disable bell with 3 states: active (green), blocked (amber warning), unsubscribed (button)</li>
+      <li class="new"><span>✅</span> <strong>SW push handler</strong> — shows notification with vibration, deduplication tag</li>
+      <li class="new"><span>✅</span> <strong>SW notificationclick</strong> — focuses existing tab or opens new window to item URL</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📱 Features v2.5 — PWA (Progressive Web App)</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>manifest.ts</strong> — Next.js 15 native manifest: GroupPick name, icons, display: standalone, #8b5cf6 theme color</li>
+      <li class="new"><span>✅</span> <strong>iOS metadata</strong> — appleWebApp in layout.tsx, apple-touch-icon, Add to Home Screen support</li>
+      <li class="new"><span>✅</span> <strong>Service worker</strong> — network-first caching, old cache cleanup on CACHE_VERSION bump, auto-update</li>
+      <li class="new"><span>✅</span> <strong>usePWAInstall hook</strong> — detects installed/iOS/Android/installable states</li>
+      <li class="new"><span>✅</span> <strong>Install section in Settings</strong> — Android button (native prompt), Android fallback (manual), iOS step-by-step, installed badge</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📋 Features v2.4 — Physical Inspection Checklist</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>checklist_data JSONB column</strong> — added to apartments, default NULL, initialized client-side on first open</li>
+      <li class="new"><span>✅</span> <strong>Default Hebrew template</strong> — 3 categories: שאלות לדיירים 🗣️ (5), בדיקות פיזיות 🛠️ (7), ריהוט וציוד 🛋️ (3)</li>
+      <li class="new"><span>✅</span> <strong>ListChecks icon button</strong> on every card (compact + expanded) — opens ChecklistModal</li>
+      <li class="new"><span>✅</span> <strong>Mini progress bar</strong> under icon — violet while in progress, green at 100%</li>
+      <li class="new"><span>✅</span> <strong>ChecklistModal</strong> — RTL, fixed header/footer, scrollable body (flex-1 min-h-0 fix), h-[90dvh]</li>
+      <li class="new"><span>✅</span> <strong>Optimistic toggle</strong> — instant UI update + 600ms debounced save to Supabase</li>
+      <li class="new"><span>✅</span> <strong>Collapsible categories</strong> — accordion with X/Y badge counters</li>
+      <li class="new"><span>✅</span> <strong>Reset button</strong> — clears all items back to unchecked defaults</li>
+    </ul>
   </div>
 
   <div class="section">
@@ -326,6 +388,7 @@
     <table>
       <thead><tr><th>Date</th><th>Version</th><th>Changes</th></tr></thead>
       <tbody>
+        <tr><td>Sep 2026</td><td><span class="pill pill-purple">v3.0</span></td><td><strong>Web Push:</strong> VAPID, group-scoped subscriptions, instant new-item push, 48h cron reminders, SW push handler. <strong>PWA:</strong> manifest, service worker, install UI. <strong>Checklist:</strong> Hebrew inspection checklist modal</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.3</span></td><td><strong>AI Screenshot Extraction:</strong> Gemini Vision API, dynamic prompts per category, screenshot → hero image, non-destructive form merge</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.2</span></td><td><strong>Room filter:</strong> half-rooms, range UI, orange connected pills. <strong>Map:</strong> all categories, category-aware labels and price units</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.1</span></td><td><strong>Scraper:</strong> yad-il.co.il, multi-query scan, phone API. <strong>Notes:</strong> threaded JSONB chat. <strong>Images:</strong> Supabase Storage uploads. <strong>Read receipts:</strong> viewed_by + NEW badge</td></tr>
@@ -342,16 +405,16 @@
     <div class="section-title">🔮 Roadmap</div>
     <ul class="checklist">
       <li><span>⏳</span> Re-enable RLS with proper auth token flow</li>
-      <li><span>⏳</span> Toast notifications for actions</li>
+      <li><span>⏳</span> Toast notifications for in-app actions</li>
       <li><span>⏳</span> Leave household option</li>
       <li><span>⏳</span> Multiple households per user</li>
-      <li><span>⏳</span> Push notifications for new items</li>
       <li><span>⏳</span> Facebook Marketplace scraper</li>
       <li><span>⏳</span> Side-by-side comparison view</li>
+      <li><span>⏳</span> Export to PDF/Excel</li>
     </ul>
   </div>
 
-  <div class="footer">GroupPick · v2.3 · September 2026 · Next.js + Supabase Auth + Gemini Vision AI</div>
+  <div class="footer">GroupPick · v3.0 · September 2026 · Next.js + Supabase + Gemini Vision + PWA + Web Push</div>
 
 </div>
 </body>
