@@ -12,8 +12,6 @@ import {
   Trash2,
   MapPin,
   User,
-  ChevronLeft,
-  ChevronRight,
   Expand,
   Images,
   BedDouble,
@@ -26,6 +24,7 @@ import {
 import type { Apartment, ReactionStatus, CategoryType, ItemMetadata, CarMetadata, BrideVenueMetadata, ApartmentMetadata, NotesThread } from "@/types/database";
 import { useHousehold } from "@/contexts/HouseholdContext";
 import NotesThreadComponent from "./NotesThread";
+import ImageViewer from "./ImageViewer";
 
 interface ApartmentCardProps {
   apartment: Apartment;
@@ -172,16 +171,6 @@ export default function ApartmentCard({
     if (isUnread) onMarkViewed(apartment.id);
   };
 
-  const handlePrevImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
-  };
-
-  const handleNextImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
-  };
-
   const toggleExpanded = () => {
     const opening = !isExpanded;
     setIsExpanded(opening);
@@ -297,80 +286,22 @@ export default function ApartmentCard({
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
             <div className="flex flex-col lg:flex-row">
-              {/* Image Gallery */}
-              <div className="lg:w-1/2 xl:w-3/5 bg-slate-900 relative">
+              {/* Image Gallery — swipeable, zoomable */}
+              <div className="lg:w-1/2 xl:w-3/5 bg-slate-900 overflow-hidden">
                 {allImages.length > 0 ? (
-                  <div className="relative aspect-[4/3] lg:aspect-auto lg:h-full">
-                    <Image
-                      src={allImages[currentImageIndex]}
-                      alt={`${apartment.title} - Image ${currentImageIndex + 1}`}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 60vw"
-                      className="object-contain"
-                      priority
-                    />
-                    
-                    {allImages.length > 1 && (
-                      <>
-                        <button
-                          onClick={handlePrevImage}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors"
-                          aria-label="Previous image"
-                        >
-                          <ChevronLeft className="w-6 h-6" />
-                        </button>
-                        <button
-                          onClick={handleNextImage}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors"
-                          aria-label="Next image"
-                        >
-                          <ChevronRight className="w-6 h-6" />
-                        </button>
-                        
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-black/60 text-white text-sm font-medium">
-                          {currentImageIndex + 1} / {allImages.length}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <ImageViewer
+                    images={allImages}
+                    title={apartment.title}
+                    initialIndex={currentImageIndex}
+                  />
                 ) : (
-                  <div className="aspect-[4/3] lg:h-full flex flex-col items-center justify-center text-slate-500">
+                  <div className="aspect-[4/3] flex flex-col items-center justify-center text-slate-500">
                     {category === "car" ? (
                       <Car className="w-12 h-12 mb-2" strokeWidth={1.5} />
                     ) : (
                       <MapPin className="w-12 h-12 mb-2" strokeWidth={1.5} />
                     )}
                     <span className="text-sm font-medium">No images</span>
-                  </div>
-                )}
-                
-                {/* Thumbnail strip */}
-                {allImages.length > 1 && (
-                  <div className="absolute bottom-16 left-0 right-0 px-4 hidden lg:block">
-                    <div className="flex gap-2 overflow-x-auto py-2 justify-center">
-                      {allImages.map((img, idx) => (
-                        <button
-                          key={idx}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentImageIndex(idx);
-                          }}
-                          className={`relative w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${
-                            idx === currentImageIndex
-                              ? "border-white shadow-lg scale-105"
-                              : "border-transparent opacity-60 hover:opacity-100"
-                          }`}
-                        >
-                          <Image
-                            src={img}
-                            alt={`Thumbnail ${idx + 1}`}
-                            fill
-                            sizes="64px"
-                            className="object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 )}
               </div>
