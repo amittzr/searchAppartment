@@ -6,6 +6,7 @@ import {
   Home, Users, Plus, UserPlus, Loader2, AlertCircle, 
   Copy, Check, Car, Heart
 } from "lucide-react";
+import JustPickLogo from "@/components/JustPickLogo";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import type { CategoryType } from "@/types/database";
 import { CATEGORY_CONFIGS } from "@/types/database";
@@ -186,7 +187,7 @@ export default function OnboardingPage() {
   // Success state after creating household
   if (createdInviteCode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
             <div className="flex flex-col items-center text-center gap-4">
@@ -218,9 +219,9 @@ export default function OnboardingPage() {
 
               <button
                 onClick={goToApp}
-                className="w-full py-3 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-brand-600 hover:to-brand-800 active:scale-95 transition-all duration-150"
+                className="w-full py-3 rounded-xl bg-gradient-to-br from-violet-500 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-violet-600 hover:to-blue-700 active:scale-95 transition-all duration-150"
               >
-                Start Using GroupPick
+                Start Using JustPick
               </button>
             </div>
           </div>
@@ -230,15 +231,13 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Brand mark */}
         <div className="flex flex-col items-center mb-8 gap-3">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg">
-            <Home className="w-8 h-8 text-white" strokeWidth={2} />
-          </div>
+          <JustPickLogo size="lg" />
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-slate-900">Welcome to GroupPick</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Welcome to JustPick</h1>
             <p className="text-sm text-slate-500 mt-1">Let&apos;s set up your household</p>
           </div>
         </div>
@@ -363,7 +362,7 @@ export default function OnboardingPage() {
               <button
                 type="submit"
                 disabled={loading || !householdName.trim()}
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-brand-600 hover:to-brand-800 active:scale-95 transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-br from-violet-500 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-violet-600 hover:to-blue-700 active:scale-95 transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {loading ? "Creating..." : "Create Household"}

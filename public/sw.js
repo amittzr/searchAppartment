@@ -1,5 +1,5 @@
 // ============================================================
-// GroupPick Service Worker v4
+// JustPick Service Worker v4
 //
 // Responsibilities:
 //   1. Network-first caching with automatic old-cache cleanup
@@ -11,7 +11,7 @@
 // ============================================================
 
 const CACHE_VERSION = "v4"; // ← increment on every deploy
-const CACHE_NAME    = `grouppick-${CACHE_VERSION}`;
+const CACHE_NAME    = `justpick-${CACHE_VERSION}`;
 
 // ── Lifecycle: Install ────────────────────────────────────────────────────────
 // Skip waiting so the new SW activates as soon as it installs
@@ -63,15 +63,15 @@ self.addEventListener("push", (event) => {
     payload = event.data.json();
   } catch {
     // If payload is not JSON, use plain text as body
-    payload = { title: "GroupPick", body: event.data.text(), url: "/", tag: "grouppick" };
+    payload = { title: "JustPick", body: event.data.text(), url: "/", tag: "justpick" };
   }
 
-  const title   = payload.title ?? "GroupPick";
+  const title   = payload.title ?? "JustPick";
   const options = {
     body:    payload.body  ?? "",
     icon:    payload.icon  ?? "/icons/icon-192x192.png",
     badge:   "/icons/icon-192x192.png",
-    tag:     payload.tag   ?? "grouppick",  // same-tag replaces older notification
+    tag:     payload.tag   ?? "justpick",  // same-tag replaces older notification
     data:    { url: payload.url ?? "/" },
     // Show notification even when the app is in the foreground
     requireInteraction: false,

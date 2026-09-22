@@ -16,8 +16,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name:             "GroupPick",
-    short_name:       "GroupPick",
+    name:             "JustPick",
+    short_name:       "JustPick",
     description:      "Collaborative tracker for apartments, vehicles, venues and more.",
     start_url:        "/",
     display:          "standalone",      // hides browser chrome — feels like a native app

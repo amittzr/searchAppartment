@@ -3,7 +3,8 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Home, Mail, Lock, User, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Key } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Key } from "lucide-react";
+import JustPickLogo from "@/components/JustPickLogo";
 import { getSupabaseClient } from "@/lib/supabase-client";
 
 export default function SignupPage() {
@@ -86,7 +87,7 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
             <div className="flex flex-col items-center text-center gap-4">
@@ -102,7 +103,7 @@ export default function SignupPage() {
               </div>
               <Link
                 href="/login"
-                className="text-sm text-brand-600 hover:text-brand-700 font-medium hover:underline"
+                className="text-sm text-violet-600 hover:text-violet-700 font-medium hover:underline"
               >
                 Back to sign in
               </Link>
@@ -114,15 +115,13 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Brand mark */}
         <div className="flex flex-col items-center mb-8 gap-3">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg">
-            <Home className="w-8 h-8 text-white" strokeWidth={2} />
-          </div>
+          <JustPickLogo size="lg" />
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-slate-900">GroupPick</h1>
+            <h1 className="text-2xl font-bold text-slate-900">JustPick</h1>
             <p className="text-sm text-slate-500 mt-1">Decide together, pick the best</p>
           </div>
         </div>
@@ -238,7 +237,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-brand-600 hover:to-brand-800 active:scale-95 transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-br from-violet-500 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-violet-600 hover:to-blue-700 active:scale-95 transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? "Creating account..." : "Create Account"}
@@ -249,7 +248,7 @@ export default function SignupPage() {
               Already have an account?{" "}
               <Link 
                 href="/login" 
-                className="text-brand-600 hover:text-brand-700 font-medium hover:underline"
+                className="text-violet-600 hover:text-violet-700 font-medium hover:underline"
               >
                 Sign in
               </Link>

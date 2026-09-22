@@ -1,4 +1,4 @@
-# GroupPick — Project Specification
+# JustPick — Project Specification
 
 > A private, real-time collaborative decision-making app for couples.
 > Track apartments, wedding venues, cars, or any category together.
@@ -226,7 +226,7 @@ AS $$ SELECT household_id FROM public.profiles WHERE id = auth.uid() $$;
 - [x] Color-coded markers by reaction status
 - [x] Click marker → mini card with actions
 
-### v2.0 — GroupPick (Real Auth & Multi-Category)
+### v2.0 — JustPick (Real Auth & Multi-Category)
 - [x] **Supabase Auth** replaces shared password
 - [x] **Signup** with invite password gate
 - [x] **Onboarding** — create or join household

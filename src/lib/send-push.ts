@@ -16,7 +16,7 @@ import { createClient } from "@supabase/supabase-js";
 // ── VAPID configuration (set once, used for all sends) ────────────────────────
 const VAPID_PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
-const VAPID_SUBJECT     = process.env.VAPID_SUBJECT ?? "mailto:admin@grouppick.app";
+const VAPID_SUBJECT     = process.env.VAPID_SUBJECT ?? "mailto:admin@justpick.app";
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
@@ -101,7 +101,7 @@ export async function sendPushToGroup(
     body:  payload.body,
     url:   payload.url  ?? "/",
     icon:  payload.icon ?? "/icons/icon-192x192.png",
-    tag:   payload.tag  ?? "grouppick",
+    tag:   payload.tag  ?? "justpick",
   });
 
   // ── Send to each subscriber in parallel ──────────────────────────────────

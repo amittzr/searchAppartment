@@ -1,8 +1,8 @@
 /**
- * Yad2 to GroupPick Bookmarklet
+ * Yad2 to JustPick Bookmarklet
  *
  * Extracts apartment data from a Yad2 listing page and redirects
- * to the GroupPick app with the data pre-filled.
+ * to the JustPick app with the data pre-filled.
  *
  * Supports both URL formats:
  *   - https://www.yad2.co.il/realestate/item/...
@@ -134,7 +134,7 @@
       }
     }
   } catch (err) {
-    console.warn("GroupPick bookmarklet: __NEXT_DATA__ parse failed:", err);
+    console.warn("JustPick bookmarklet: __NEXT_DATA__ parse failed:", err);
   }
 
   // ── Step 3: DOM fallbacks for phone if not found in JSON ──────────────────

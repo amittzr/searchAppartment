@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   // App identity
-  title:       "GroupPick",
+  title:       "JustPick",
   description: "Collaborative tracker for apartments, vehicles, venues and more.",
 
   // Prevent search engines from indexing this private app
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   // Enables "Add to Home Screen" full-screen standalone mode on iOS Safari.
   appleWebApp: {
     capable:         true,
-    title:           "GroupPick",
+    title:           "JustPick",
     statusBarStyle:  "default",
     // Apple Touch Icon — iOS uses this when adding to Home Screen.
     // Place a 180×180 px PNG at public/icons/apple-touch-icon.png

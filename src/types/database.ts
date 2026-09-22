@@ -1,5 +1,5 @@
 // ============================================================
-// GroupPick v2.0 — Supabase Database Type Definitions
+// JustPick — Supabase Database Type Definitions
 // Keep in sync with supabase/migration-v2.0-grouppick.sql
 // ============================================================
 
