@@ -59,7 +59,39 @@ export interface ProfileUpdate {
   updated_at?: string;
 }
 
+// ── Activity Log Types ───────────────────────────────────────
+export type ActivityEventType =
+  | "item_added"
+  | "item_deleted"
+  | "reaction_set"
+  | "match"
+  | "note_added"
+  | "member_joined";
+
+export interface ActivityLogEntry {
+  id:           string;
+  household_id: string;
+  user_id:      string | null;
+  user_name:    string;
+  event_type:   ActivityEventType;
+  item_id:      string | null;
+  item_title:   string | null;
+  metadata:     Record<string, unknown>;
+  created_at:   string;
+}
+
+export interface ActivityLogInsert {
+  household_id: string;
+  user_id?:     string | null;
+  user_name:    string;
+  event_type:   ActivityEventType;
+  item_id?:     string | null;
+  item_title?:  string | null;
+  metadata?:    Record<string, unknown>;
+}
+
 // ── Checklist Types ──────────────────────────────────────────
+
 export interface ChecklistItem {
   id:      string;
   text:    string;

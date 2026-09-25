@@ -88,3 +88,13 @@
     overflow: hidden;
   }
 }
+
+/* ── Activity Feed slide-in from right ──────────────────────────────────── */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
+}

@@ -1,14 +1,25 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, FormEvent, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, User, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Key } from "lucide-react";
 import JustPickLogo from "@/components/JustPickLogo";
 import { getSupabaseClient } from "@/lib/supabase-client";
 
-export default function SignupPage() {
+// ── Inner component that uses useSearchParams ─────────────────────────────────
+function SignupForm() {
+  const searchParams = useSearchParams();
   const router = useRouter();
+
+  // If user arrived via /join/[code] → /signup?invite=[code],
+  // stash the code in sessionStorage so onboarding can auto-fill it.
+  useEffect(() => {
+    const invite = searchParams.get("invite");
+    if (invite) {
+      sessionStorage.setItem("justpick_invite_code", invite);
+    }
+  }, [searchParams]);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -257,5 +268,14 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Default export wrapped in Suspense (required for useSearchParams) ─────────
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   );
 }

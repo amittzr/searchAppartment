@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   X, Users, User, Home, Copy, Check, LogOut, Pencil, Save, Loader2,
-  Download, Share, CheckCircle2, Bell, BellOff, BellRing,
+  Download, Share, Share2, CheckCircle2, Bell, BellOff, BellRing, Trash2, AlertTriangle,
 } from "lucide-react";
 import { useHousehold } from "@/contexts/HouseholdContext";
 import { getSupabaseClient } from "@/lib/supabase-client";
@@ -56,6 +56,11 @@ export default function HouseholdSettingsModal({
     subscribe:    pushSubscribe,
     unsubscribe:  pushUnsubscribe,
   } = usePushNotifications();
+
+  // Delete account state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting,          setDeleting]          = useState(false);
+  const [deleteError,       setDeleteError]        = useState<string | null>(null);
 
   // Close on Escape key
   const handleKeyDown = useCallback(
@@ -154,6 +159,25 @@ export default function HouseholdSettingsModal({
       setCodeError("Failed to update code");
     } finally {
       setSavingCode(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch("/api/account/delete", { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeleteError(data.error ?? "Deletion failed. Please try again.");
+        return;
+      }
+      // Account deleted — sign out and redirect to login
+      await signOut();
+    } catch (err) {
+      setDeleteError("Unexpected error. Please try again.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -314,6 +338,9 @@ export default function HouseholdSettingsModal({
                     <p className="text-xs text-brand-600 mt-2">
                       Share this code with your partner so they can join your household
                     </p>
+                  )}
+                  {!isEditingCode && household?.invite_code && (
+                    <InviteLinkShare inviteCode={household.invite_code} />
                   )}
                 </div>
               </div>
@@ -499,6 +526,66 @@ export default function HouseholdSettingsModal({
                 )}
               </div>
             )}
+            {/* ── Danger Zone ──────────────────────────────────────────── */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-red-100">
+              <p className="text-xs font-semibold text-red-400 uppercase tracking-wide">
+                Danger Zone
+              </p>
+
+              {!showDeleteConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-2 w-full px-4 py-3 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 flex-shrink-0" />
+                  Delete My Account &amp; Data
+                </button>
+              ) : (
+                <div className="flex flex-col gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700 font-medium">
+                      This is permanent and cannot be undone.
+                    </p>
+                  </div>
+                  <p className="text-xs text-red-600">
+                    Your profile, push subscriptions, and reactions will be permanently deleted.
+                    Shared items in your household will remain for your partner.
+                  </p>
+
+                  {deleteError && (
+                    <p className="text-xs text-red-700 bg-red-100 px-3 py-2 rounded-lg">
+                      {deleteError}
+                    </p>
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setShowDeleteConfirm(false); setDeleteError(null); }}
+                      disabled={deleting}
+                      className="flex-1 py-2 rounded-xl bg-white border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteAccount}
+                      disabled={deleting}
+                      className="flex-1 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      {deleting ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" />Deleting…</>
+                      ) : (
+                        <>Yes, delete everything</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
 
@@ -521,6 +608,100 @@ export default function HouseholdSettingsModal({
             Done
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// InviteLinkShare
+// Displays the deep-link invite URL with copy and native share.
+// ============================================================
+
+function InviteLinkShare({ inviteCode }: { inviteCode: string }) {
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Build the full URL client-side (safe: window only accessed in browser)
+  const inviteUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/join/${inviteCode}`
+      : `/join/${inviteCode}`;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const el = document.createElement("textarea");
+      el.value = inviteUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (!navigator.share) return;
+    try {
+      await navigator.share({
+        title: "Join my JustPick household",
+        text:  "Tap the link to join my household on JustPick and start deciding together!",
+        url:   inviteUrl,
+      });
+    } catch {
+      // User dismissed the share sheet — not an error
+    }
+  };
+
+  const canNativeShare = typeof navigator !== "undefined" && !!navigator.share;
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {/* URL display box */}
+      <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
+        <span className="text-xs text-slate-400 flex-1 truncate select-all font-mono">
+          {inviteUrl}
+        </span>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        {/* Copy link */}
+        <button
+          type="button"
+          onClick={handleCopyLink}
+          className={`
+            flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold
+            transition-all active:scale-95
+            ${copiedLink
+              ? "bg-green-100 text-green-700 border border-green-300"
+              : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200"
+            }
+          `}
+        >
+          {copiedLink ? (
+            <><Check className="w-3.5 h-3.5" /> Copied!</>
+          ) : (
+            <><Copy className="w-3.5 h-3.5" /> Copy Link</>
+          )}
+        </button>
+
+        {/* Native share (mobile) — hidden when Web Share API unavailable */}
+        {canNativeShare && (
+          <button
+            type="button"
+            onClick={handleNativeShare}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 active:scale-95 transition-all"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            Share
+          </button>
+        )}
       </div>
     </div>
   );

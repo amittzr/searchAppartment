@@ -39,6 +39,17 @@ export default function OnboardingPage() {
   const [inviteCode, setInviteCode] = useState("");
 
   useEffect(() => {
+    // Auto-fill invite code if user arrived via a deep link (/join/[code])
+    // The code was stored in sessionStorage by the signup page.
+    const storedCode = sessionStorage.getItem("justpick_invite_code");
+    if (storedCode) {
+      setInviteCode(storedCode);
+      setStep("join"); // skip the choice screen and go straight to join
+      sessionStorage.removeItem("justpick_invite_code"); // consume it once
+    }
+  }, []);
+
+  useEffect(() => {
     // Get current user
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();

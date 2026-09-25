@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createMiddlewareSupabaseClient } from "@/lib/supabase-middleware";
 
 // Routes that are publicly accessible (no auth required)
-const PUBLIC_PATHS = ["/login", "/signup", "/api/auth"];
+const PUBLIC_PATHS = ["/login", "/signup", "/api/auth", "/join"];
 
 // Routes that require auth but NOT a household
 const AUTH_ONLY_PATHS = ["/onboarding"];

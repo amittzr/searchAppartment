@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, Suspense, lazy } from "react";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, SearchX, Home, Settings, Map } from "lucide-react";
+import { AlertCircle, SearchX, Home, Settings, Map, Activity } from "lucide-react";
 
 import Navbar from "@/components/Navbar";
 import FilterToolbar, { filterAndSortApartments } from "@/components/FilterToolbar";
@@ -12,6 +12,9 @@ import LoadingSkeleton from "@/components/LoadingSkeleton";
 import HouseholdSettingsModal from "@/components/HouseholdSettingsModal";
 import MapView from "@/components/MapView";
 import ChecklistModal from "@/components/ChecklistModal";
+import AppFooter from "@/components/AppFooter";
+import ActivityFeed from "@/components/ActivityFeed";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { HouseholdProvider, useHousehold } from "@/contexts/HouseholdContext";
 
 import { useApartments } from "@/hooks/useApartments";
@@ -98,6 +101,7 @@ function DashboardContent() {
     deleteApartment,
     setReaction,
     markAsViewed,
+    isMatch,
     refetch,
   } = useApartments();
 
@@ -114,7 +118,11 @@ function DashboardContent() {
   const [bookmarkletData, setBookmarkletData] = useState<Partial<ApartmentFormData> | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isActivityOpen, setIsActivityOpen] = useState(false);
   const [checklistApartment, setChecklistApartment] = useState<Apartment | null>(null);
+
+  // Activity log
+  const { entries: activityEntries, loading: activityLoading, logEvent, refetch: refetchActivity } = useActivityLog();
 
   // Check for bookmarklet auto-fill params on mount
   useEffect(() => {
@@ -215,12 +223,37 @@ function DashboardContent() {
     if (result.error) {
       throw new Error(result.error);
     }
+
+    // Log activity (fire-and-forget — non-blocking)
+    if (editingApartment) {
+      // edit events are not logged to avoid noise
+    } else {
+      logEvent("item_added", { itemTitle: title });
+    }
   };
 
   // Handle reaction changes from ApartmentCard
   const handleReactionChange = async (apartmentId: string, reaction: ReactionStatus | null) => {
     const { error: reactionError } = await setReaction(apartmentId, reaction);
-    if (reactionError) setActionError(reactionError);
+    if (reactionError) { setActionError(reactionError); return; }
+
+    // Log reaction activity (non-blocking)
+    const apt = apartments.find((a) => a.id === apartmentId);
+    if (apt && reaction) {
+      logEvent("reaction_set", {
+        itemId:    apartmentId,
+        itemTitle: apt.title,
+        metadata:  { reaction },
+      });
+
+      // Check if this reaction created a match
+      if (reaction === "liked") {
+        const updatedApt = { ...apt, reactions: { ...apt.reactions, [username]: "liked" } } as typeof apt;
+        if (isMatch(updatedApt)) {
+          logEvent("match", { itemId: apartmentId, itemTitle: apt.title });
+        }
+      }
+    }
   };
 
   // Open checklist modal for a specific apartment
@@ -242,11 +275,16 @@ function DashboardContent() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteConfirmId) return;
-    // Close dialog immediately — item is already removed from UI optimistically
     const idToDelete = deleteConfirmId;
+    // Snapshot title before optimistic removal
+    const deletedApt = apartments.find((a) => a.id === idToDelete);
     setDeleteConfirmId(null);
     const { error: deleteError } = await deleteApartment(idToDelete);
-    if (deleteError) setActionError(`Delete failed: ${deleteError}. The item has been restored.`);
+    if (deleteError) {
+      setActionError(`Delete failed: ${deleteError}. The item has been restored.`);
+    } else if (deletedApt) {
+      logEvent("item_deleted", { itemId: idToDelete, itemTitle: deletedApt.title });
+    }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -277,6 +315,14 @@ function DashboardContent() {
             >
               <Map className="w-4 h-4" />
               <span className="hidden sm:inline">Map</span>
+            </button>
+            <button
+              onClick={() => setIsActivityOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              title="Recent activity"
+            >
+              <Activity className="w-4 h-4" />
+              <span className="hidden sm:inline">Activity</span>
             </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
@@ -378,6 +424,15 @@ function DashboardContent() {
         onClose={() => setIsSettingsOpen(false)}
       />
 
+      {/* ── Activity Feed Drawer ─────────────────────────────────────────────── */}
+      <ActivityFeed
+        entries={activityEntries}
+        loading={activityLoading}
+        isOpen={isActivityOpen}
+        onClose={() => setIsActivityOpen(false)}
+        onRefetch={refetchActivity}
+      />
+
       {/* ── Checklist Modal ──────────────────────────────────────────────────── */}
       {checklistApartment && (
         <ChecklistModal
@@ -434,6 +489,8 @@ function DashboardContent() {
           </div>
         </div>
       )}
+      {/* ── Footer ──────────────────────────────────────────────────────────────── */}
+      <AppFooter />
     </div>
   );
 }
