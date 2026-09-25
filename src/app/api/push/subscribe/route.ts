@@ -6,6 +6,11 @@
 // Body (JSON):
 //   { action: "subscribe",   subscription: PushSubscription }
 //   { action: "unsubscribe", endpoint: string }
+//
+// Key isolation guarantee:
+//   On every subscribe, we DELETE all previous subscriptions for this
+//   user first, then insert the new one. This prevents orphaned rows
+//   that still carry an old group_id from a previous household.
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,7 +25,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // ── Get user's household_id from profile ─────────────────────────────────
+  // ── Get user's current household_id from their profile ───────────────────
   const { data: profile, error: profileError } = await (supabase
     .from("profiles") as any)
     .select("household_id")
@@ -50,46 +55,54 @@ export async function POST(request: NextRequest) {
   if (action === "subscribe") {
     if (!subscription?.endpoint) {
       return NextResponse.json(
-        { error: "Invalid subscription object." },
+        { error: "Invalid subscription object: missing endpoint." },
         { status: 400 }
       );
     }
 
-    // Upsert: if this browser already has a subscription, update it
-    const { error: upsertError } = await (supabase
-      .from("push_subscriptions") as any)
-      .upsert(
-        {
-          user_id:      user.id,
-          group_id:     groupId,
-          subscription: subscription,
-        },
-        {
-          onConflict: "user_id, subscription->>'endpoint'",
-          ignoreDuplicates: false,
-        }
+    // Validate the subscription object has the required keys for web-push
+    if (!subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+      return NextResponse.json(
+        { error: "Invalid subscription object: missing encryption keys." },
+        { status: 400 }
       );
-
-    if (upsertError) {
-      // Fall back to insert on upsert failure (index conflict handling varies)
-      const { error: insertError } = await (supabase
-        .from("push_subscriptions") as any)
-        .insert({
-          user_id:      user.id,
-          group_id:     groupId,
-          subscription: subscription,
-        });
-
-      if (insertError && !insertError.message.includes("duplicate")) {
-        console.error("[push/subscribe] Insert failed:", insertError.message);
-        return NextResponse.json(
-          { error: "Failed to save subscription." },
-          { status: 500 }
-        );
-      }
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    // ── CRITICAL: Delete ALL existing subscriptions for this user first ───
+    // This eliminates orphaned rows from previous households.
+    // If a user leaves group A and joins group B, their old group A
+    // subscription is removed here, preventing cross-group notification leakage.
+    const { error: deleteOldError } = await (supabase
+      .from("push_subscriptions") as any)
+      .delete()
+      .eq("user_id", user.id);
+
+    if (deleteOldError) {
+      // Log but do not abort — the insert below will still work
+      console.warn("[push/subscribe] Could not remove old subscriptions:", deleteOldError.message);
+    } else {
+      console.log(`[push/subscribe] Cleared old subscriptions for user ${user.id}`);
+    }
+
+    // ── Insert the fresh subscription with the current group_id ──────────
+    const { error: insertError } = await (supabase
+      .from("push_subscriptions") as any)
+      .insert({
+        user_id:      user.id,
+        group_id:     groupId,  // ← always the user's CURRENT household
+        subscription: subscription,
+      });
+
+    if (insertError) {
+      console.error("[push/subscribe] Insert failed:", insertError.message);
+      return NextResponse.json(
+        { error: "Failed to save subscription." },
+        { status: 500 }
+      );
+    }
+
+    console.log(`[push/subscribe] Saved subscription for user ${user.id} in group ${groupId}`);
+    return NextResponse.json({ success: true, groupId }, { status: 200 });
   }
 
   // ── Unsubscribe ───────────────────────────────────────────────────────────
@@ -102,12 +115,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Delete by matching the endpoint inside the JSONB field
+    // Delete by matching endpoint inside the JSONB field, scoped to this user
     const { error: deleteError } = await (supabase
       .from("push_subscriptions") as any)
       .delete()
       .eq("user_id", user.id)
-      .eq("subscription->>endpoint", ep);
+      .filter("subscription->>endpoint", "eq", ep);
 
     if (deleteError) {
       console.error("[push/subscribe] Delete failed:", deleteError.message);
@@ -117,6 +130,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log(`[push/subscribe] Removed subscription for user ${user.id}`);
     return NextResponse.json({ success: true }, { status: 200 });
   }
 
