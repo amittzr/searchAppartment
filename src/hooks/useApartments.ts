@@ -302,16 +302,42 @@ export function useApartments(): UseApartmentsReturn {
       // Build new reactions object
       const newReactions: ReactionsMap = { ...apartment.reactions };
       if (reaction === null) {
-        // Remove the user's reaction
         delete newReactions[username];
       } else {
-        // Set/update the user's reaction
         newReactions[username] = reaction;
       }
 
-      return updateApartment(id, { reactions: newReactions });
+      const result = await updateApartment(id, { reactions: newReactions });
+      if (result.error) return result;
+
+      // ── Match detection: fire push if all members just liked this item ────
+      // Only check when the new reaction is "liked" — no point checking otherwise.
+      // We compute the match against the updated reactions (newReactions) to
+      // avoid waiting for the realtime update to reflect in local state.
+      if (reaction === "liked" && members.length >= 2) {
+        const allLiked = members.every(
+          (member) => newReactions[member.full_name] === "liked"
+        );
+
+        if (allLiked) {
+          // Fire-and-forget — match push must not block the reaction save
+          fetch("/api/push/notify-match", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({
+              groupId:   householdId,
+              itemTitle: apartment.title,
+              itemId:    id,
+            }),
+          }).catch((err) => {
+            console.warn("[useApartments] Match push notification failed (non-blocking):", err);
+          });
+        }
+      }
+
+      return result;
     },
-    [apartments, updateApartment, username]
+    [apartments, updateApartment, username, members, householdId]
   );
 
   // ── Mark item as viewed by current user ────────────────────────────────────

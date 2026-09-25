@@ -829,14 +829,38 @@ export default function ApartmentModal({
               onNewNote={(val) => setField("newNote", val)}
               onSend={() => {
                 if (!form.newNote.trim() || !profile) return;
+
+                const noteText = form.newNote.trim();
                 const newEntry = {
                   userId:    profile.id,
                   userName:  profile.full_name,
-                  text:      form.newNote.trim(),
+                  text:      noteText,
                   createdAt: new Date().toISOString(),
                 };
+
                 setField("notes", [...form.notes, newEntry]);
                 setField("newNote", "");
+
+                // ── Fire comment push notification (fire-and-forget) ────────
+                // Only meaningful when editing an existing item (we need the id).
+                // New items don't have a DB id yet — the push is skipped until
+                // they are saved and reopened.
+                if (editingApartment?.id && household?.id) {
+                  fetch("/api/push/notify-comment", {
+                    method:  "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body:    JSON.stringify({
+                      groupId:      household.id,
+                      itemId:       editingApartment.id,
+                      itemTitle:    editingApartment.title,
+                      commentText:  noteText,
+                      senderName:   profile.full_name,
+                      senderUserId: profile.id,
+                    }),
+                  }).catch((err) => {
+                    console.warn("[ApartmentModal] Comment push failed (non-blocking):", err);
+                  });
+                }
               }}
               currentUserId={profile?.id ?? ""}
               disabled={submitting}
