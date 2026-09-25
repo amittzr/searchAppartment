@@ -37,7 +37,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Security: only allow the authenticated user to trigger pushes for their own group
+  // ── Authorization: verify the groupId belongs to the authenticated user ───
+  // Prevents any logged-in user from blasting push notifications to
+  // a group they don't belong to by supplying an arbitrary groupId.
+  const { data: profile } = await (supabase
+    .from("profiles") as any)
+    .select("household_id")
+    .eq("id", user.id)
+    .single() as { data: { household_id: string | null } | null };
+
+  if (!profile?.household_id || profile.household_id !== groupId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // ── Sender identity guard ─────────────────────────────────────────────────
+  // The excludeUserId (the person who created the item) must be the caller.
+  // This prevents users from excluding others from receiving notifications.
   if (excludeUserId && excludeUserId !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

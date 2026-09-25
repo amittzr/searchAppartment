@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 // ── Model configuration ────────────────────────────────────────────────────────
 
@@ -243,7 +244,22 @@ function parseGeminiJson(rawText: string): ScreenshotExtraction {
 
 // ── Route handler ──────────────────────────────────────────────────────────────
 
+// Maximum allowed screenshot file size: 10 MB
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
 export async function POST(request: NextRequest) {
+  // ── Auth guard: only logged-in users may use Gemini ───────────────────────
+  // This prevents anonymous abuse of the GEMINI_API_KEY quota.
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json<ParseScreenshotError>(
+      { success: false, error: "server_error", message: "Authentication required." },
+      { status: 401 }
+    );
+  }
+
   // ── Validate API key ───────────────────────────────────────────────────────
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -271,6 +287,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<ParseScreenshotError>(
       { success: false, error: "invalid_input", message: "No image file provided." },
       { status: 400 }
+    );
+  }
+
+  // ── File size guard: reject oversized uploads ──────────────────────────────
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return NextResponse.json<ParseScreenshotError>(
+      { success: false, error: "invalid_input", message: `File too large. Maximum allowed size is ${MAX_FILE_SIZE_BYTES / 1024 / 1024} MB.` },
+      { status: 413 }
     );
   }
 

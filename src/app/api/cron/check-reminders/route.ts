@@ -20,22 +20,36 @@ import { sendPushToGroup } from "@/lib/send-push";
 
 // ── Service-role Supabase client (bypasses RLS) ───────────────────────────────
 function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) {
+    // Hard failure — do not silently fall back to the anon key.
+    // The anon key cannot read other users' data and would cause silent
+    // data errors instead of a clear misconfiguration alert.
+    throw new Error(
+      "[cron/check-reminders] SUPABASE_SERVICE_ROLE_KEY is required but not set. " +
+      "Add it to your environment variables."
+    );
+  }
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
 }
 
 export async function GET(request: NextRequest) {
-  // ── Auth guard: verify CRON_SECRET ────────────────────────────────────────
+  // ── Auth guard: CRON_SECRET is mandatory ─────────────────────────────────
+  // If the secret is not configured, the endpoint refuses to run.
+  // Fail closed: no secret = no access, regardless of environment.
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = request.headers.get("authorization") ?? "";
-    const token      = authHeader.replace(/^Bearer\s+/i, "").trim();
-    if (token !== cronSecret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!cronSecret) {
+    console.error("[cron/check-reminders] CRON_SECRET is not set — refusing to run.");
+    return NextResponse.json(
+      { error: "Server misconfigured: CRON_SECRET is required." },
+      { status: 500 }
+    );
+  }
+
+  const authHeader = request.headers.get("authorization") ?? "";
+  const token      = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (token !== cronSecret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase      = getServiceClient();

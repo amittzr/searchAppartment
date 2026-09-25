@@ -22,12 +22,19 @@ webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 // ── Supabase service-role client (bypasses RLS for server-side reads/deletes) ─
 function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  // Use SUPABASE_SERVICE_ROLE_KEY if available; fall back to anon key for dev
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  return createClient(url, key);
+  const url        = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!serviceKey) {
+    // Hard failure — the anon key cannot read other users' push subscriptions.
+    // Silently falling back would cause push delivery to break with no error.
+    throw new Error(
+      "[send-push] SUPABASE_SERVICE_ROLE_KEY is required but not set. " +
+      "Push notifications will not work without it."
+    );
+  }
+
+  return createClient(url, serviceKey);
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -67,11 +74,20 @@ export async function sendPushToGroup(
   payload:       PushPayload,
   excludeUserId?: string
 ): Promise<SendPushResult> {
-  const supabase = getServiceClient();
   const result: SendPushResult = { sent: 0, failed: 0, errors: [] };
 
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     console.warn("[send-push] VAPID keys not configured — skipping push");
+    return result;
+  }
+
+  let supabase;
+  try {
+    supabase = getServiceClient();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[send-push]", msg);
+    result.errors.push(msg);
     return result;
   }
 
