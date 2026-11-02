@@ -47,7 +47,7 @@ export default function FilterTabs({
                 ${
                   isActive
                     ? "bg-brand-600 border-brand-600 text-white shadow-md"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-brand-700 dark:hover:text-brand-300 dark:hover:bg-brand-900/30"
                 }
               `}
             >
@@ -63,7 +63,7 @@ export default function FilterTabs({
                   ${
                     isActive
                       ? "bg-white/25 text-white"
-                      : "bg-slate-100 text-slate-500"
+                      : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
                   }
                 `}
               >

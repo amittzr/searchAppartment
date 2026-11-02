@@ -198,24 +198,24 @@ export default function HouseholdSettingsModal({
       />
 
       {/* Panel */}
-      <div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-modal animate-slide-up max-h-[90dvh] flex flex-col">
+      <div className="relative w-full sm:max-w-md bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-modal animate-slide-up max-h-[90dvh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center">
-              <Users className="w-5 h-5 text-brand-600" />
+            <div className="w-10 h-10 rounded-xl bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center">
+              <Users className="w-5 h-5 text-brand-600 dark:text-brand-300" />
             </div>
             <div>
-              <h2 id="settings-title" className="text-lg font-bold text-slate-900">
+              <h2 id="settings-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 Household Settings
               </h2>
-              <p className="text-sm text-slate-400">Manage your household</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500">Manage your household</p>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Close settings"
-            className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors dark:hover:text-slate-200 dark:hover:bg-slate-700"
           >
             <X className="w-5 h-5" strokeWidth={2} />
           </button>
@@ -225,32 +225,32 @@ export default function HouseholdSettingsModal({
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <div className="flex flex-col gap-5">
             {/* Your Profile */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center">
-                  <User className="w-5 h-5 text-brand-600" />
+                <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center">
+                  <User className="w-5 h-5 text-brand-600 dark:text-brand-300" />
                 </div>
                 <div>
-                  <p className="font-medium text-slate-900">{profile?.full_name}</p>
-                  <p className="text-sm text-slate-500">{profile?.email}</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{profile?.full_name}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{profile?.email}</p>
                 </div>
               </div>
             </div>
 
             {/* Household Info */}
             {household && (
-              <div className="p-4 rounded-xl bg-brand-50 border border-brand-200">
+              <div className="p-4 rounded-xl bg-brand-50 border border-brand-200 dark:bg-brand-900/20 dark:border-brand-800">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xl">{categoryConfig.emoji}</span>
                   <div>
-                    <p className="font-medium text-brand-900">{household.name}</p>
-                    <p className="text-sm text-brand-600">{categoryConfig.label}</p>
+                    <p className="font-medium text-brand-900 dark:text-brand-200">{household.name}</p>
+                    <p className="text-sm text-brand-600 dark:text-brand-400">{categoryConfig.label}</p>
                   </div>
                 </div>
                 
                 {/* Invite Code */}
-                <div className="mt-4 pt-4 border-t border-brand-200">
-                  <p className="text-xs font-medium text-brand-700 uppercase tracking-wide mb-2">
+                <div className="mt-4 pt-4 border-t border-brand-200 dark:border-brand-800">
+                  <p className="text-xs font-medium text-brand-700 dark:text-brand-300 uppercase tracking-wide mb-2">
                     Invite Code
                   </p>
                   
@@ -268,7 +268,7 @@ export default function HouseholdSettingsModal({
                           placeholder="Enter new code"
                           maxLength={20}
                           autoFocus
-                          className="flex-1 px-3 py-2 rounded-lg bg-white border border-brand-300 text-lg font-mono font-bold text-brand-700 tracking-wider focus:outline-none focus:ring-2 focus:ring-brand-400"
+                          className="flex-1 px-3 py-2 rounded-lg bg-white border border-brand-300 text-lg font-mono font-bold text-brand-700 tracking-wider focus:outline-none focus:ring-2 focus:ring-brand-400 dark:bg-slate-900 dark:border-brand-700 dark:text-brand-300"
                         />
                         <button
                           onClick={saveInviteCode}
@@ -284,27 +284,27 @@ export default function HouseholdSettingsModal({
                         <button
                           onClick={cancelEditingCode}
                           disabled={savingCode}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:opacity-50 transition-all"
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:opacity-50 transition-all dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
                         >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                       {codeError && (
-                        <p className="text-xs text-red-600">{codeError}</p>
+                        <p className="text-xs text-red-600 dark:text-red-400">{codeError}</p>
                       )}
-                      <p className="text-xs text-brand-600">
+                      <p className="text-xs text-brand-600 dark:text-brand-400">
                         Letters and numbers only, at least 4 characters
                       </p>
                     </div>
                   ) : (
                     // Display mode
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 px-3 py-2 rounded-lg bg-white border border-brand-200 text-lg font-mono font-bold text-brand-700 tracking-wider">
+                      <code className="flex-1 px-3 py-2 rounded-lg bg-white border border-brand-200 text-lg font-mono font-bold text-brand-700 tracking-wider dark:bg-slate-900 dark:border-brand-800 dark:text-brand-300">
                         {household.invite_code}
                       </code>
                       <button
                         onClick={startEditingCode}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
                         title="Edit invite code"
                       >
                         <Pencil className="w-4 h-4" />
@@ -314,7 +314,7 @@ export default function HouseholdSettingsModal({
                         className={`
                           flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all
                           ${copied 
-                            ? "bg-green-100 text-green-700 border border-green-300" 
+                            ? "bg-green-100 text-green-700 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800" 
                             : "bg-brand-600 text-white hover:bg-brand-700"
                           }
                         `}
@@ -335,7 +335,7 @@ export default function HouseholdSettingsModal({
                   )}
                   
                   {!isEditingCode && (
-                    <p className="text-xs text-brand-600 mt-2">
+                    <p className="text-xs text-brand-600 dark:text-brand-400 mt-2">
                       Share this code with your partner so they can join your household
                     </p>
                   )}
@@ -349,13 +349,13 @@ export default function HouseholdSettingsModal({
             {/* ── Install App ──────────────────────────────────────────── */}
             {(isInstalled || isInstallable || isIOS || isAndroid) && (
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                   Install App
                 </p>
 
                 {/* Already installed */}
                 {isInstalled && (
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm dark:bg-green-900/30 dark:border-green-800 dark:text-green-300">
                     <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                     <span>App is installed ✅</span>
                   </div>
@@ -375,12 +375,12 @@ export default function HouseholdSettingsModal({
 
                 {/* Android — prompt not yet available, show manual instructions */}
                 {!isInstalled && isAndroid && !isInstallable && (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-sm">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-sm dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-300">
                     <p className="font-semibold mb-2 flex items-center gap-1.5">
                       <Download className="w-4 h-4" />
                       Add to Home Screen
                     </p>
-                    <ol className="flex flex-col gap-1.5 text-slate-600 text-xs">
+                    <ol className="flex flex-col gap-1.5 text-slate-600 dark:text-slate-400 text-xs">
                       <li className="flex items-start gap-2">
                         <span className="font-bold flex-shrink-0">1.</span>
                         <span>Tap the <strong>⋮ menu</strong> (3 dots) in Chrome's top-right corner</span>
@@ -399,12 +399,12 @@ export default function HouseholdSettingsModal({
 
                 {/* iOS — manual instructions */}
                 {!isInstalled && isIOS && (
-                  <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-800 text-sm">
+                  <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-800 text-sm dark:bg-sky-900/30 dark:border-sky-800 dark:text-sky-200">
                     <p className="font-semibold mb-2 flex items-center gap-1.5">
                       <Home className="w-4 h-4" />
                       Add to Home Screen
                     </p>
-                    <ol className="flex flex-col gap-1.5 text-sky-700 text-xs">
+                    <ol className="flex flex-col gap-1.5 text-sky-700 dark:text-sky-300 text-xs">
                       <li className="flex items-start gap-2">
                         <span className="font-bold flex-shrink-0">1.</span>
                         <span>
@@ -430,25 +430,25 @@ export default function HouseholdSettingsModal({
             {/* ── Notifications ────────────────────────────────────────── */}
             {pushSupported && (
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                   Notifications
                 </p>
 
                 {/* Blocked state */}
                 {pushPermission === "denied" ? (
-                  <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-300">
                     <BellOff className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="font-semibold">Notifications blocked</p>
-                      <p className="text-xs text-amber-600 mt-0.5">
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
                         Enable them in your browser settings, then reload the page.
                       </p>
                     </div>
                   </div>
                 ) : pushSubscribed ? (
                   /* Subscribed state — show disable button */
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 border border-green-200">
-                    <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 border border-green-200 dark:bg-green-900/30 dark:border-green-800">
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-300 text-sm font-medium">
                       <BellRing className="w-4 h-4" />
                       Notifications enabled 🔔
                     </div>
@@ -456,7 +456,7 @@ export default function HouseholdSettingsModal({
                       type="button"
                       onClick={pushUnsubscribe}
                       disabled={pushLoading}
-                      className="text-xs text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50 flex items-center gap-1"
+                      className="text-xs text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50 flex items-center gap-1 dark:text-slate-500 dark:hover:text-red-400"
                     >
                       {pushLoading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -482,7 +482,7 @@ export default function HouseholdSettingsModal({
                       )}
                       {pushLoading ? "Enabling…" : "Enable Notifications 🔔"}
                     </button>
-                    <p className="text-xs text-slate-400 text-center">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
                       Get notified when your partner adds a new item
                     </p>
                   </div>
@@ -490,7 +490,7 @@ export default function HouseholdSettingsModal({
 
                 {/* Push error banner */}
                 {pushError && (
-                  <p className="text-xs text-red-500 px-1">{pushError}</p>
+                  <p className="text-xs text-red-500 dark:text-red-400 px-1">{pushError}</p>
                 )}
               </div>
             )}
@@ -498,21 +498,21 @@ export default function HouseholdSettingsModal({
             {/* Members List */}
             {members.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-3">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-3">
                   Household Members ({members.length})
                 </p>
                 <div className="flex flex-col gap-2">
                   {members.map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700"
                     >
-                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
-                        <User className="w-4 h-4 text-slate-500" />
+                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                        <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                       </div>
-                      <span className="font-medium text-slate-700">{member.full_name}</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{member.full_name}</span>
                       {member.id === profile?.id && (
-                        <span className="ml-auto text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                        <span className="ml-auto text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded dark:text-slate-400 dark:bg-slate-700">
                           You
                         </span>
                       )}
@@ -520,15 +520,15 @@ export default function HouseholdSettingsModal({
                   ))}
                 </div>
                 {members.length === 1 && (
-                  <p className="text-sm text-amber-600 mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <p className="text-sm text-amber-600 mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:text-amber-300 dark:bg-amber-900/30 dark:border-amber-800">
                     Share the invite code above with your partner to start collaborating!
                   </p>
                 )}
               </div>
             )}
             {/* ── Danger Zone ──────────────────────────────────────────── */}
-            <div className="flex flex-col gap-2 pt-2 border-t border-red-100">
-              <p className="text-xs font-semibold text-red-400 uppercase tracking-wide">
+            <div className="flex flex-col gap-2 pt-2 border-t border-red-100 dark:border-red-900/50">
+              <p className="text-xs font-semibold text-red-400 dark:text-red-400 uppercase tracking-wide">
                 Danger Zone
               </p>
 
@@ -536,26 +536,26 @@ export default function HouseholdSettingsModal({
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center gap-2 w-full px-4 py-3 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
+                  className="flex items-center gap-2 w-full px-4 py-3 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
                 >
                   <Trash2 className="w-4 h-4 flex-shrink-0" />
                   Delete My Account &amp; Data
                 </button>
               ) : (
-                <div className="flex flex-col gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+                <div className="flex flex-col gap-3 p-4 rounded-xl bg-red-50 border border-red-200 dark:bg-red-950/40 dark:border-red-900">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-700 font-medium">
+                    <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">
                       This is permanent and cannot be undone.
                     </p>
                   </div>
-                  <p className="text-xs text-red-600">
+                  <p className="text-xs text-red-600 dark:text-red-400">
                     Your profile, push subscriptions, and reactions will be permanently deleted.
                     Shared items in your household will remain for your partner.
                   </p>
 
                   {deleteError && (
-                    <p className="text-xs text-red-700 bg-red-100 px-3 py-2 rounded-lg">
+                    <p className="text-xs text-red-700 bg-red-100 px-3 py-2 rounded-lg dark:text-red-300 dark:bg-red-900/40">
                       {deleteError}
                     </p>
                   )}
@@ -565,7 +565,7 @@ export default function HouseholdSettingsModal({
                       type="button"
                       onClick={() => { setShowDeleteConfirm(false); setDeleteError(null); }}
                       disabled={deleting}
-                      className="flex-1 py-2 rounded-xl bg-white border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+                      className="flex-1 py-2 rounded-xl bg-white border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50 dark:bg-slate-800 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
                     >
                       Cancel
                     </button>
@@ -590,12 +590,12 @@ export default function HouseholdSettingsModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100">
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700">
           <button
             type="button"
             onClick={handleSignOut}
             disabled={signingOut}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/40"
           >
             <LogOut className="w-4 h-4" />
             {signingOut ? "Signing out..." : "Sign Out"}
@@ -603,7 +603,7 @@ export default function HouseholdSettingsModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors"
+            className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
           >
             Done
           </button>
@@ -663,8 +663,8 @@ function InviteLinkShare({ inviteCode }: { inviteCode: string }) {
   return (
     <div className="mt-3 flex flex-col gap-2">
       {/* URL display box */}
-      <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
-        <span className="text-xs text-slate-400 flex-1 truncate select-all font-mono">
+      <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700">
+        <span className="text-xs text-slate-400 dark:text-slate-500 flex-1 truncate select-all font-mono">
           {inviteUrl}
         </span>
       </div>
@@ -679,8 +679,8 @@ function InviteLinkShare({ inviteCode }: { inviteCode: string }) {
             flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold
             transition-all active:scale-95
             ${copiedLink
-              ? "bg-green-100 text-green-700 border border-green-300"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200"
+              ? "bg-green-100 text-green-700 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800"
+              : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 dark:border-slate-600"
             }
           `}
         >

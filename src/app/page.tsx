@@ -12,6 +12,7 @@ import LoadingSkeleton from "@/components/LoadingSkeleton";
 import HouseholdSettingsModal from "@/components/HouseholdSettingsModal";
 import MapView from "@/components/MapView";
 import ChecklistModal from "@/components/ChecklistModal";
+import CommentsModal from "@/components/CommentsModal";
 import AppFooter from "@/components/AppFooter";
 import ActivityFeed from "@/components/ActivityFeed";
 import { useActivityLog } from "@/hooks/useActivityLog";
@@ -100,6 +101,7 @@ function DashboardContent() {
     updateApartment,
     deleteApartment,
     setReaction,
+    addComment,
     markAsViewed,
     isMatch,
     refetch,
@@ -120,6 +122,8 @@ function DashboardContent() {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
   const [checklistApartment, setChecklistApartment] = useState<Apartment | null>(null);
+  const [commentsApartment, setCommentsApartment] = useState<Apartment | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   // Activity log
   const { entries: activityEntries, loading: activityLoading, logEvent, refetch: refetchActivity } = useActivityLog();
@@ -268,6 +272,36 @@ function DashboardContent() {
     );
   };
 
+  // Open the dedicated comments chat for a specific apartment
+  const handleComments = (apartment: Apartment) => {
+    setCommentsApartment(apartment);
+  };
+
+  // Jump from an activity entry to its apartment card: scroll into view + highlight.
+  const handleActivityJump = (itemId: string) => {
+    // If current filters would hide the target, clear them so the card is visible.
+    const isVisible = filteredApartments.some((a) => a.id === itemId);
+    if (!isVisible) {
+      setFilters(DEFAULT_FILTERS);
+    }
+
+    setIsActivityOpen(false);
+    setHighlightedId(itemId);
+
+    // Wait for the drawer to close / list to re-render, then scroll to the card.
+    setTimeout(() => {
+      const el = document.getElementById(`apt-${itemId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 120);
+
+    // Auto-clear the highlight after a couple seconds.
+    setTimeout(() => {
+      setHighlightedId((prev) => (prev === itemId ? null : prev));
+    }, 2600);
+  };
+
   // Two-step delete: first click sets the confirm ID, second click confirms
   const handleDeleteRequest = (id: string) => {
     setDeleteConfirmId(id);
@@ -289,7 +323,7 @@ function DashboardContent() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col transition-colors">
       {/* Sticky top navigation */}
       <Navbar
         onAddClick={handleOpenAdd}
@@ -301,16 +335,16 @@ function DashboardContent() {
 
         {/* ── Household settings button ───────────────────────────────────── */}
         <div className="flex items-center justify-between">
-          <div className="text-sm text-slate-500">
-            Welcome, <span className="font-medium text-slate-700">{username}</span>
+          <div className="text-sm text-slate-500 dark:text-slate-400">
+            Welcome, <span className="font-medium text-slate-700 dark:text-slate-200">{username}</span>
             {partnerName && partnerName !== "Partner" && (
-              <> & <span className="font-medium text-slate-700">{partnerName}</span></>
+              <> & <span className="font-medium text-slate-700 dark:text-slate-200">{partnerName}</span></>
             )}
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMapOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"
               title="View on map"
             >
               <Map className="w-4 h-4" />
@@ -318,7 +352,7 @@ function DashboardContent() {
             </button>
             <button
               onClick={() => setIsActivityOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"
               title="Recent activity"
             >
               <Activity className="w-4 h-4" />
@@ -326,7 +360,7 @@ function DashboardContent() {
             </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"
             >
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Settings</span>
@@ -336,12 +370,12 @@ function DashboardContent() {
 
         {/* ── Action error banner ─────────────────────────────────────────── */}
         {actionError && (
-          <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm animate-fade-in">
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm animate-fade-in dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span className="flex-1">{actionError}</span>
             <button
               onClick={() => setActionError(null)}
-              className="text-red-400 hover:text-red-600 font-bold text-lg leading-none"
+              className="text-red-400 hover:text-red-600 font-bold text-lg leading-none dark:text-red-500 dark:hover:text-red-300"
               aria-label="Dismiss error"
             >
               ×
@@ -351,14 +385,14 @@ function DashboardContent() {
 
         {/* ── Fetch error ─────────────────────────────────────────────────── */}
         {error && !loading && (
-          <div className="flex items-start gap-2 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <div className="flex items-start gap-2 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold">Failed to load apartments</p>
-              <p className="mt-0.5 text-red-500">{error}</p>
+              <p className="mt-0.5 text-red-500 dark:text-red-400">{error}</p>
               <button
                 onClick={handleRefresh}
-                className="mt-2 text-red-600 underline underline-offset-2 font-medium text-xs hover:text-red-800"
+                className="mt-2 text-red-600 underline underline-offset-2 font-medium text-xs hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
               >
                 Try again
               </button>
@@ -375,7 +409,7 @@ function DashboardContent() {
 
         {/* ── Results summary ─────────────────────────────────────────────── */}
         {!loading && (
-          <p className="text-xs text-slate-400 px-1">
+          <p className="text-xs text-slate-400 dark:text-slate-500 px-1">
             {filteredApartments.length === 0
               ? `No ${categoryConfig.label.toLowerCase()} match your filters`
               : `Showing ${filteredApartments.length} ${filteredApartments.length !== 1 ? categoryConfig.label.toLowerCase() : categoryConfig.label.toLowerCase().replace(/s$/, "")}`}
@@ -402,6 +436,8 @@ function DashboardContent() {
                 onReactionChange={handleReactionChange}
                 onMarkViewed={markAsViewed}
                 onChecklist={handleChecklist}
+                onComments={handleComments}
+                highlight={highlightedId === apartment.id}
               />
             ))}
           </div>
@@ -431,6 +467,8 @@ function DashboardContent() {
         isOpen={isActivityOpen}
         onClose={() => setIsActivityOpen(false)}
         onRefetch={refetchActivity}
+        onEntryClick={handleActivityJump}
+        isItemAvailable={(id) => apartments.some((a) => a.id === id)}
       />
 
       {/* ── Checklist Modal ──────────────────────────────────────────────────── */}
@@ -440,6 +478,16 @@ function DashboardContent() {
           isOpen={true}
           onClose={() => setChecklistApartment(null)}
           onSaved={handleChecklistSaved}
+        />
+      )}
+
+      {/* ── Comments Modal — uses the live apartment so new comments appear ───── */}
+      {commentsApartment && (
+        <CommentsModal
+          apartment={apartments.find((a) => a.id === commentsApartment.id) ?? commentsApartment}
+          isOpen={true}
+          onClose={() => setCommentsApartment(null)}
+          onSend={addComment}
         />
       )}
 
@@ -465,17 +513,17 @@ function DashboardContent() {
             onClick={() => setDeleteConfirmId(null)}
             aria-hidden="true"
           />
-          <div className="relative bg-white rounded-2xl shadow-modal p-6 w-full max-w-sm animate-slide-up">
-            <h3 id="delete-confirm-title" className="text-base font-bold text-slate-900">
+          <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-modal p-6 w-full max-w-sm animate-slide-up">
+            <h3 id="delete-confirm-title" className="text-base font-bold text-slate-900 dark:text-slate-100">
               Delete this apartment?
             </h3>
-            <p className="mt-1.5 text-sm text-slate-500">
+            <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
               This action cannot be undone. The listing will be permanently removed for both of you.
             </p>
             <div className="flex items-center justify-end gap-3 mt-5">
               <button
                 onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Cancel
               </button>
@@ -507,7 +555,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-4 animate-fade-in">
-      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300">
+      <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-300 dark:text-slate-600">
         {hasFilters ? (
           <SearchX className="w-8 h-8" strokeWidth={1.5} />
         ) : (
@@ -515,10 +563,10 @@ function EmptyState({
         )}
       </div>
       <div className="text-center">
-        <h3 className="text-base font-semibold text-slate-700">
+        <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">
           {hasFilters ? "No apartments match your filters" : "No apartments yet"}
         </h3>
-        <p className="text-sm text-slate-400 mt-1 max-w-xs">
+        <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 max-w-xs">
           {hasFilters
             ? "Try adjusting your filters or clearing them to see more results."
             : "Start adding apartments you find on Yad2 or Facebook."}
@@ -527,7 +575,7 @@ function EmptyState({
       {hasFilters ? (
         <button
           onClick={onClearFilters}
-          className="mt-2 px-5 py-2.5 rounded-xl bg-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-300 transition-colors"
+          className="mt-2 px-5 py-2.5 rounded-xl bg-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-300 transition-colors dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
         >
           Clear filters
         </button>

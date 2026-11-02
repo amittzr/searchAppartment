@@ -196,32 +196,32 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="absolute inset-4 sm:inset-8 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="absolute inset-4 sm:inset-8 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
           <div className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-brand-600" />
-            <h2 className="text-lg font-bold text-slate-800">Map View</h2>
-            <span className="text-sm text-slate-500">
+            <MapPin className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Map View</h2>
+            <span className="text-sm text-slate-500 dark:text-slate-400">
               ({mappableApartments.length} of {apartments.length} {categoryConfig.label.toLowerCase()} on map)
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-slate-200 transition-colors"
+            className="p-2 rounded-xl hover:bg-slate-200 transition-colors dark:hover:bg-slate-700"
             aria-label="Close map"
           >
-            <X className="w-5 h-5 text-slate-600" />
+            <X className="w-5 h-5 text-slate-600 dark:text-slate-300" />
           </button>
         </div>
 
         {/* Map container */}
         <div className="flex-1 relative">
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-100 z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-slate-900 z-10">
               <div className="flex flex-col items-center gap-2">
                 <div className="w-8 h-8 border-3 border-brand-600 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-slate-500">Loading map...</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">Loading map...</span>
               </div>
             </div>
           )}
@@ -230,11 +230,11 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
 
           {/* No geocoded apartments warning */}
           {!isLoading && mappableApartments.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-100/90">
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-100/90 dark:bg-slate-900/90">
               <div className="text-center p-6">
-                <MapPin className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-slate-700">No {categoryConfig.label.toLowerCase()} on map yet</h3>
-                <p className="text-sm text-slate-500 mt-1 max-w-xs">
+                <MapPin className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">No {categoryConfig.label.toLowerCase()} on map yet</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
                   Items will appear on the map once their addresses are geocoded.
                   Edit an item and save it to geocode its location.
                 </p>
@@ -245,21 +245,21 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
           {/* Selected apartment card */}
           {selectedApartment && (
             <div 
-              className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-slide-up"
+              className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden animate-slide-up"
               style={{ zIndex: 1000 }}
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setSelectedApartment(null)}
-                className="absolute top-2 right-2 p-1 rounded-lg hover:bg-slate-100 transition-colors z-10"
+                className="absolute top-2 right-2 p-1 rounded-lg hover:bg-slate-100 transition-colors z-10 dark:hover:bg-slate-700"
                 aria-label="Close card"
               >
-                <X className="w-4 h-4 text-slate-400" />
+                <X className="w-4 h-4 text-slate-400 dark:text-slate-500" />
               </button>
 
               {/* Image */}
               {selectedApartment.image_url && (
-                <div className="h-32 bg-slate-100 overflow-hidden">
+                <div className="h-32 bg-slate-100 dark:bg-slate-700 overflow-hidden">
                   <img
                     src={selectedApartment.image_url}
                     alt={selectedApartment.title}
@@ -270,21 +270,21 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
 
               {/* Content */}
               <div className="p-3">
-                <h3 className="font-semibold text-slate-800 text-sm line-clamp-2">
+                <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm line-clamp-2">
                   {selectedApartment.title}
                 </h3>
 
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="text-lg font-bold text-brand-600">
+                  <span className="text-lg font-bold text-brand-600 dark:text-brand-400">
                     ₪{formatPrice(selectedApartment.price)}
-                    <span className="text-xs font-normal text-slate-400 ml-1">
+                    <span className="text-xs font-normal text-slate-400 dark:text-slate-500 ml-1">
                       {/* Show unit suffix only — strip leading ₪ from config value */}
                       {categoryConfig.priceUnit.replace("₪", "").trim() || ""}
                     </span>
                   </span>
                   {/* Rooms: only relevant for apartments and venues */}
                   {selectedApartment.rooms && (
-                    <span className="flex items-center gap-1 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                    <span className="flex items-center gap-1 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md dark:text-slate-400 dark:bg-slate-700">
                       <BedDouble className="w-3 h-3" />
                       {selectedApartment.rooms}
                     </span>
@@ -298,7 +298,7 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
                       href={selectedApartment.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition-colors dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
                     >
                       <ExternalLink className="w-3 h-3" />
                       View listing
@@ -307,7 +307,7 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
                   {selectedApartment.phone && (
                     <a
                       href={`tel:${selectedApartment.phone}`}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition-colors dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/60"
                     >
                       <Phone className="w-3 h-3" />
                       Call
@@ -326,7 +326,7 @@ export default function MapView({ apartments, onClose, onSelectApartment }: MapV
         </div>
 
         {/* Legend */}
-        <div className="px-4 py-2 border-t border-slate-200 bg-slate-50 flex items-center gap-4 text-xs text-slate-500">
+        <div className="px-4 py-2 border-t border-slate-200 bg-slate-50 flex items-center gap-4 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
           <span className="font-medium">Legend:</span>
           <span className="flex items-center gap-1">
             <span className="w-3 h-3 rounded-full bg-pink-500 border border-white shadow-sm" />

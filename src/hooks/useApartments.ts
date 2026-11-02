@@ -13,6 +13,8 @@ import type {
   ReactionsMap,
   CategoryType,
   ItemMetadata,
+  NoteEntry,
+  NotesThread,
 } from "@/types/database";
 
 // Aliases for backward compatibility
@@ -31,6 +33,8 @@ interface UseApartmentsReturn {
   // Reaction operations
   setStatus: (id: string, status: ApartmentStatus) => Promise<{ error: string | null }>;
   setReaction: (id: string, reaction: ReactionStatus | null) => Promise<{ error: string | null }>;
+  // Comments / notes
+  addComment: (id: string, text: string) => Promise<{ error: string | null }>;
   // Read-receipt
   markAsViewed: (id: string) => Promise<void>;
   // Utility
@@ -336,6 +340,62 @@ export function useApartments(): UseApartmentsReturn {
     [apartments, updateApartment, username, members, householdId]
   );
 
+  // ── Add a comment / note to an item ─────────────────────────────────────────
+  const addComment = useCallback(
+    async (id: string, text: string): Promise<{ error: string | null }> => {
+      const trimmed = text.trim();
+      if (!trimmed) return { error: null };
+
+      const apartment = apartments.find((apt) => apt.id === id);
+      if (!apartment) return { error: "Item not found" };
+      if (!user?.id) return { error: "Not signed in" };
+
+      const existing: NotesThread = Array.isArray(apartment.notes) ? apartment.notes : [];
+      const entry: NoteEntry = {
+        userId:    user.id,
+        userName:  username,
+        text:      trimmed,
+        createdAt: new Date().toISOString(),
+      };
+      const newNotes: NotesThread = [...existing, entry];
+
+      // Optimistic local update so the comment shows instantly
+      setApartments((prev) =>
+        prev.map((apt) => (apt.id === id ? { ...apt, notes: newNotes } : apt))
+      );
+
+      const result = await updateApartment(id, { notes: newNotes });
+      if (result.error) {
+        // Roll back on failure
+        setApartments((prev) =>
+          prev.map((apt) => (apt.id === id ? { ...apt, notes: existing } : apt))
+        );
+        return result;
+      }
+
+      // Fire-and-forget push to other group members (non-blocking)
+      if (householdId) {
+        fetch("/api/push/notify-comment", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({
+            groupId:      householdId,
+            itemId:       id,
+            itemTitle:    apartment.title,
+            commentText:  trimmed,
+            senderName:   username,
+            senderUserId: user.id,
+          }),
+        }).catch((err) => {
+          console.warn("[useApartments] Comment push notification failed (non-blocking):", err);
+        });
+      }
+
+      return { error: null };
+    },
+    [apartments, updateApartment, username, householdId, user?.id]
+  );
+
   // ── Mark item as viewed by current user ────────────────────────────────────
   const markAsViewed = useCallback(
     async (id: string): Promise<void> => {
@@ -387,6 +447,7 @@ export function useApartments(): UseApartmentsReturn {
     deleteApartment,
     setStatus,
     setReaction,
+    addComment,
     markAsViewed,
     refetch: fetchApartments,
     isMatch,

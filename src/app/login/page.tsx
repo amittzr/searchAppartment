@@ -65,7 +65,7 @@ function LoginForm() {
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* Error banner */}
       {error && (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm animate-fade-in">
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm animate-fade-in dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -73,7 +73,7 @@ function LoginForm() {
 
       {/* Email field */}
       <div className="relative">
-        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
         <input
           type="email"
           value={email}
@@ -84,13 +84,13 @@ function LoginForm() {
           placeholder="Email address"
           autoComplete="email"
           autoFocus
-          className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300"
+          className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600"
         />
       </div>
 
       {/* Password field */}
       <div className="relative">
-        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
         <input
           type={showPassword ? "text" : "password"}
           value={password}
@@ -100,13 +100,13 @@ function LoginForm() {
           }}
           placeholder="Password"
           autoComplete="current-password"
-          className="w-full px-4 py-3 pl-10 pr-11 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300"
+          className="w-full px-4 py-3 pl-10 pr-11 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600"
         />
         <button
           type="button"
           onClick={() => setShowPassword((v) => !v)}
           aria-label={showPassword ? "Hide password" : "Show password"}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors dark:text-slate-500 dark:hover:text-slate-300"
         >
           {showPassword ? (
             <EyeOff className="w-4 h-4" strokeWidth={2} />
@@ -127,11 +127,11 @@ function LoginForm() {
       </button>
 
       {/* Sign up link */}
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-sm text-slate-500 dark:text-slate-400">
         Don&apos;t have an account?{" "}
         <Link 
           href="/signup" 
-          className="text-violet-600 hover:text-violet-700 font-medium hover:underline"
+          className="text-violet-600 hover:text-violet-700 font-medium hover:underline dark:text-violet-400 dark:hover:text-violet-300"
         >
           Sign up
         </Link>
@@ -142,24 +142,24 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="w-full max-w-sm">
         {/* Brand mark */}
         <div className="flex flex-col items-center mb-8 gap-3">
           <JustPickLogo size="lg" />
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-slate-900">JustPick</h1>
-            <p className="text-sm text-slate-500 mt-1">Decide together, pick the best</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">JustPick</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Decide together, pick the best</p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-5 text-center">
+        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 dark:bg-slate-800 dark:border-slate-700">
+          <h2 className="text-lg font-semibold text-slate-800 mb-5 text-center dark:text-slate-100">
             Welcome back
           </h2>
 
-          <Suspense fallback={<div className="h-48 animate-pulse bg-slate-100 rounded-xl" />}>
+          <Suspense fallback={<div className="h-48 animate-pulse bg-slate-100 rounded-xl dark:bg-slate-700" />}>
             <LoginForm />
           </Suspense>
         </div>

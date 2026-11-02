@@ -198,29 +198,29 @@ export default function OnboardingPage() {
   // Success state after creating household
   if (createdInviteCode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 dark:bg-slate-800 dark:border-slate-700">
             <div className="flex flex-col items-center text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                <Check className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center dark:bg-green-900/40">
+                <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-800">Household Created!</h2>
-                <p className="text-sm text-slate-500 mt-2">
+                <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Household Created!</h2>
+                <p className="text-sm text-slate-500 mt-2 dark:text-slate-400">
                   Share this invite code with your partner so they can join:
                 </p>
               </div>
 
               {/* Invite code display */}
-              <div className="w-full bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <div className="w-full bg-slate-50 rounded-xl p-4 border border-slate-200 dark:bg-slate-900 dark:border-slate-700">
                 <div className="flex items-center justify-between gap-3">
-                  <code className="text-2xl font-mono font-bold text-brand-600 tracking-wider">
+                  <code className="text-2xl font-mono font-bold text-brand-600 tracking-wider dark:text-brand-400">
                     {createdInviteCode}
                   </code>
                   <button
                     onClick={copyInviteCode}
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg bg-brand-100 text-brand-700 hover:bg-brand-200 transition-colors text-sm font-medium"
+                    className="flex items-center gap-1 px-3 py-2 rounded-lg bg-brand-100 text-brand-700 hover:bg-brand-200 transition-colors text-sm font-medium dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-900/60"
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     {copied ? "Copied!" : "Copy"}
@@ -242,49 +242,49 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="w-full max-w-md">
         {/* Brand mark */}
         <div className="flex flex-col items-center mb-8 gap-3">
           <JustPickLogo size="lg" />
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-slate-900">Welcome to JustPick</h1>
-            <p className="text-sm text-slate-500 mt-1">Let&apos;s set up your household</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome to JustPick</h1>
+            <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">Let&apos;s set up your household</p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 dark:bg-slate-800 dark:border-slate-700">
           {/* Choice step */}
           {step === "choice" && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-lg font-semibold text-slate-800 text-center mb-2">
+              <h2 className="text-lg font-semibold text-slate-800 text-center mb-2 dark:text-slate-100">
                 How would you like to start?
               </h2>
 
               <button
                 onClick={() => setStep("create")}
-                className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-slate-200 hover:border-brand-400 hover:bg-brand-50 transition-all text-left group"
+                className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-slate-200 hover:border-brand-400 hover:bg-brand-50 transition-all text-left group dark:border-slate-700 dark:hover:border-brand-600 dark:hover:bg-brand-900/20"
               >
-                <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center group-hover:bg-brand-200 transition-colors">
-                  <Plus className="w-6 h-6 text-brand-600" />
+                <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center group-hover:bg-brand-200 transition-colors dark:bg-brand-900/40 dark:group-hover:bg-brand-900/60">
+                  <Plus className="w-6 h-6 text-brand-600 dark:text-brand-300" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-800">Create a Household</h3>
-                  <p className="text-sm text-slate-500">Start fresh and invite your partner</p>
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-100">Create a Household</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Start fresh and invite your partner</p>
                 </div>
               </button>
 
               <button
                 onClick={() => setStep("join")}
-                className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-slate-200 hover:border-brand-400 hover:bg-brand-50 transition-all text-left group"
+                className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-slate-200 hover:border-brand-400 hover:bg-brand-50 transition-all text-left group dark:border-slate-700 dark:hover:border-brand-600 dark:hover:bg-brand-900/20"
               >
-                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                  <UserPlus className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors dark:bg-purple-900/40 dark:group-hover:bg-purple-900/60">
+                  <UserPlus className="w-6 h-6 text-purple-600 dark:text-purple-300" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-800">Join a Household</h3>
-                  <p className="text-sm text-slate-500">Enter an invite code from your partner</p>
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-100">Join a Household</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Enter an invite code from your partner</p>
                 </div>
               </button>
             </div>
@@ -296,15 +296,15 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setStep("choice")}
-                className="text-sm text-slate-500 hover:text-slate-700 self-start flex items-center gap-1"
+                className="text-sm text-slate-500 hover:text-slate-700 self-start flex items-center gap-1 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 ← Back
               </button>
 
-              <h2 className="text-lg font-semibold text-slate-800">Create your Household</h2>
+              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Create your Household</h2>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
@@ -312,24 +312,24 @@ export default function OnboardingPage() {
 
               {/* Household name */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
                   Household Name
                 </label>
                 <div className="relative">
-                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     value={householdName}
                     onChange={(e) => setHouseholdName(e.target.value)}
                     placeholder="e.g., Amit & Noa"
-                    className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
+                    className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                   />
                 </div>
               </div>
 
               {/* Category selection */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-slate-300">
                   What are you tracking?
                 </label>
                 <div className="grid gap-2">
@@ -340,14 +340,14 @@ export default function OnboardingPage() {
                       onClick={() => setCategory(opt.id)}
                       className={`flex items-center gap-3 w-full p-3 rounded-xl border-2 transition-all text-left ${
                         category === opt.id
-                          ? "border-brand-500 bg-brand-50"
-                          : "border-slate-200 hover:border-slate-300"
+                          ? "border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/20"
+                          : "border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600"
                       }`}
                     >
                       <span className="text-2xl">{opt.emoji}</span>
                       <div>
-                        <h4 className="font-medium text-slate-800">{opt.label}</h4>
-                        <p className="text-xs text-slate-500">{opt.description}</p>
+                        <h4 className="font-medium text-slate-800 dark:text-slate-100">{opt.label}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{opt.description}</p>
                       </div>
                     </button>
                   ))}
@@ -356,8 +356,8 @@ export default function OnboardingPage() {
 
               {/* Custom invite code (optional) */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Custom Invite Code <span className="text-slate-400 font-normal">(optional)</span>
+                <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
+                  Custom Invite Code <span className="text-slate-400 font-normal dark:text-slate-500">(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -365,9 +365,9 @@ export default function OnboardingPage() {
                   onChange={(e) => setCustomInviteCode(e.target.value.toLowerCase())}
                   placeholder="e.g., amitnoa2024 (or leave empty for auto)"
                   maxLength={20}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
-                <p className="text-xs text-slate-400 mt-1">Letters and numbers only, at least 4 characters</p>
+                <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">Letters and numbers only, at least 4 characters</p>
               </div>
 
               <button
@@ -387,18 +387,18 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setStep("choice")}
-                className="text-sm text-slate-500 hover:text-slate-700 self-start flex items-center gap-1"
+                className="text-sm text-slate-500 hover:text-slate-700 self-start flex items-center gap-1 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 ← Back
               </button>
 
-              <h2 className="text-lg font-semibold text-slate-800">Join a Household</h2>
-              <p className="text-sm text-slate-500 -mt-2">
+              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Join a Household</h2>
+              <p className="text-sm text-slate-500 -mt-2 dark:text-slate-400">
                 Enter the invite code your partner shared with you
               </p>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
@@ -412,7 +412,7 @@ export default function OnboardingPage() {
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                   placeholder="Enter invite code"
                   maxLength={8}
-                  className="w-full px-4 py-4 rounded-xl border border-slate-200 text-center text-xl font-mono font-bold tracking-wider text-slate-900 placeholder:text-slate-400 placeholder:font-normal placeholder:text-base bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent uppercase"
+                  className="w-full px-4 py-4 rounded-xl border border-slate-200 text-center text-xl font-mono font-bold tracking-wider text-slate-900 placeholder:text-slate-400 placeholder:font-normal placeholder:text-base bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent uppercase dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
 

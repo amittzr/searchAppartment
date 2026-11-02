@@ -10,20 +10,20 @@ import Link from "next/link";
 
 export default function AppFooter() {
   return (
-    <footer className="w-full border-t border-slate-100 bg-white mt-auto">
+    <footer className="w-full border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-slate-400 dark:text-slate-500">
           © {new Date().getFullYear()} JustPick
         </span>
         <Link
           href="/legal/privacy"
-          className="text-xs text-slate-400 hover:text-violet-600 transition-colors"
+          className="text-xs text-slate-400 hover:text-violet-600 transition-colors dark:text-slate-500 dark:hover:text-violet-400"
         >
           Privacy Policy
         </Link>
         <Link
           href="/legal/terms"
-          className="text-xs text-slate-400 hover:text-violet-600 transition-colors"
+          className="text-xs text-slate-400 hover:text-violet-600 transition-colors dark:text-slate-500 dark:hover:text-violet-400"
         >
           Terms of Service
         </Link>

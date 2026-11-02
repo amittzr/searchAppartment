@@ -9,8 +9,10 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Plus,
+  Trash2,
 } from "lucide-react";
-import type { Apartment, ChecklistData } from "@/types/database";
+import type { Apartment, ChecklistData, ChecklistItem } from "@/types/database";
 import { getSupabaseClient } from "@/lib/supabase-client";
 
 // ============================================================
@@ -58,6 +60,15 @@ const DEFAULT_CHECKLIST: ChecklistData = [
   },
 ];
 
+// Label for the user-managed "Other" category where custom items live.
+const OTHER_CATEGORY_LABEL = "אחר ➕";
+
+// Custom (user-added) items get this id prefix so we can tell them apart from
+// the fixed template items and allow deleting / preserving them on reset.
+const CUSTOM_ID_PREFIX = "custom-";
+
+const isCustomItem = (id: string) => id.startsWith(CUSTOM_ID_PREFIX);
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function cloneChecklist(data: ChecklistData): ChecklistData {
@@ -65,6 +76,32 @@ function cloneChecklist(data: ChecklistData): ChecklistData {
     ...cat,
     items: cat.items.map((item) => ({ ...item })),
   }));
+}
+
+/**
+ * Guarantees an "אחר" category exists at the end of the checklist so the user
+ * always has a place to add their own items. Returns a cloned checklist.
+ */
+function ensureOtherCategory(data: ChecklistData): ChecklistData {
+  const cloned = cloneChecklist(data);
+  if (!cloned.some((cat) => cat.category === OTHER_CATEGORY_LABEL)) {
+    cloned.push({ category: OTHER_CATEGORY_LABEL, items: [] });
+  }
+  return cloned;
+}
+
+/**
+ * Collects every user-added (custom) item across all categories.
+ * Used to preserve the user's own items when resetting the template.
+ */
+function collectCustomItems(data: ChecklistData): ChecklistItem[] {
+  const custom: ChecklistItem[] = [];
+  for (const cat of data) {
+    for (const item of cat.items) {
+      if (isCustomItem(item.id)) custom.push({ ...item });
+    }
+  }
+  return custom;
 }
 
 function calcProgress(data: ChecklistData) {
@@ -97,24 +134,30 @@ export default function ChecklistModal({
   onSaved,
 }: ChecklistModalProps) {
   const [checklist, setChecklist] = useState<ChecklistData>(() =>
-    apartment.checklist_data
-      ? cloneChecklist(apartment.checklist_data)
-      : cloneChecklist(DEFAULT_CHECKLIST)
+    ensureOtherCategory(
+      apartment.checklist_data
+        ? apartment.checklist_data
+        : DEFAULT_CHECKLIST
+    )
   );
   const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const [newItemText, setNewItemText] = useState("");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Re-initialize whenever modal opens
   useEffect(() => {
     if (!isOpen) return;
     setChecklist(
-      apartment.checklist_data
-        ? cloneChecklist(apartment.checklist_data)
-        : cloneChecklist(DEFAULT_CHECKLIST)
+      ensureOtherCategory(
+        apartment.checklist_data
+          ? apartment.checklist_data
+          : DEFAULT_CHECKLIST
+      )
     );
     setSaveError(null);
+    setNewItemText("");
     setCollapsed(new Set()); // expand all categories on open
   }, [isOpen, apartment.checklist_data, apartment.id]);
 
@@ -160,12 +203,52 @@ export default function ChecklistModal({
     });
   }, [saveToDatabase]);
 
-  // ── Reset ────────────────────────────────────────────────────────────────────
+  // ── Reset — restore defaults but KEEP the user's custom "אחר" items ─────────
   const handleReset = useCallback(() => {
-    const fresh = cloneChecklist(DEFAULT_CHECKLIST);
+    const preservedCustom = collectCustomItems(checklist);
+    const fresh = ensureOtherCategory(DEFAULT_CHECKLIST);
+    if (preservedCustom.length > 0) {
+      const other = fresh.find((cat) => cat.category === OTHER_CATEGORY_LABEL);
+      if (other) {
+        // Reset the checked state of preserved items too, like the template
+        other.items = preservedCustom.map((item) => ({ ...item, checked: false }));
+      }
+    }
     setChecklist(fresh);
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveToDatabase(fresh);
+  }, [checklist, saveToDatabase]);
+
+  // ── Add a custom item under the "אחר" category ──────────────────────────────
+  const addCustomItem = useCallback(() => {
+    const text = newItemText.trim();
+    if (!text) return;
+
+    setChecklist((prev) => {
+      const next = ensureOtherCategory(prev);
+      const otherIdx = next.findIndex((cat) => cat.category === OTHER_CATEGORY_LABEL);
+      const newItem: ChecklistItem = {
+        id:      `${CUSTOM_ID_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        text,
+        checked: false,
+      };
+      next[otherIdx].items.push(newItem);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => saveToDatabase(next), 600);
+      return next;
+    });
+    setNewItemText("");
+  }, [newItemText, saveToDatabase]);
+
+  // ── Remove a custom item ─────────────────────────────────────────────────────
+  const removeCustomItem = useCallback((catIdx: number, itemIdx: number) => {
+    setChecklist((prev) => {
+      const next = cloneChecklist(prev);
+      next[catIdx].items.splice(itemIdx, 1);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => saveToDatabase(next), 600);
+      return next;
+    });
   }, [saveToDatabase]);
 
   const toggleCollapse = (idx: number) => {
@@ -203,24 +286,24 @@ export default function ChecklistModal({
            - Uses flex-col so header + footer are fixed and body scrolls
       ──────────────────────────────────────────────────────────────────────── */}
       <div className="
-        relative w-full sm:max-w-md bg-white
+        relative w-full sm:max-w-md bg-white dark:bg-slate-800
         rounded-t-3xl sm:rounded-2xl shadow-2xl
         flex flex-col
         h-[90dvh] sm:h-[85vh]
       ">
 
         {/* ── HEADER (fixed, never scrolls) ────────────────────────────────── */}
-        <div className="flex-shrink-0 px-5 pt-5 pb-4 border-b border-slate-100">
+        <div className="flex-shrink-0 px-5 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
                 <ListChecks className="w-5 h-5 text-violet-600" />
               </div>
               <div>
-                <h2 id="checklist-title" className="text-base font-bold text-slate-900">
+                <h2 id="checklist-title" className="text-base font-bold text-slate-900 dark:text-slate-100">
                   בדיקה בשטח 📋
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5" dir="ltr">
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5" dir="ltr">
                   {apartment.title.length > 40
                     ? apartment.title.slice(0, 40) + "…"
                     : apartment.title}
@@ -230,7 +313,7 @@ export default function ChecklistModal({
             <button
               onClick={onClose}
               aria-label="Close checklist"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex-shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
@@ -239,14 +322,14 @@ export default function ChecklistModal({
           {/* Progress section */}
           <div className="mt-4">
             {allDone ? (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm font-semibold">
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-900 text-green-700 dark:text-green-300 text-sm font-semibold">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                 הבדיקה הושלמה! ✅
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-slate-500 font-medium">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                     {checked} מתוך {total} פריטים
                   </span>
                   <div className="flex items-center gap-2">
@@ -259,7 +342,7 @@ export default function ChecklistModal({
                     <span className="text-xs font-bold text-violet-600">{pct}%</span>
                   </div>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-400 transition-all duration-500"
                     style={{ width: `${pct}%` }}
@@ -269,7 +352,7 @@ export default function ChecklistModal({
             )}
 
             {saveError && (
-              <div className="flex items-center gap-2 mt-2 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs">
+              <div className="flex items-center gap-2 mt-2 p-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 text-xs">
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>שמירה נכשלה: {saveError}</span>
               </div>
@@ -294,24 +377,24 @@ export default function ChecklistModal({
 
               return (
                 // No overflow-hidden here — it would clip item content
-                <div key={catIdx} className="rounded-2xl border border-slate-200">
+                <div key={catIdx} className="rounded-2xl border border-slate-200 dark:border-slate-700">
 
                   {/* Category header button */}
                   <button
                     type="button"
                     onClick={() => toggleCollapse(catIdx)}
-                    className="w-full flex items-center justify-between px-4 py-3.5 bg-violet-50 hover:bg-violet-100 rounded-2xl transition-colors"
+                    className="w-full flex items-center justify-between px-4 py-3.5 bg-violet-50 dark:bg-violet-900/30 hover:bg-violet-100 dark:hover:bg-violet-900/50 rounded-2xl transition-colors"
                     style={{ borderRadius: isCollapsed ? "1rem" : "1rem 1rem 0 0" }}
                   >
-                    <span className="text-sm font-bold text-violet-800 text-right leading-snug">
+                    <span className="text-sm font-bold text-violet-800 dark:text-violet-300 text-right leading-snug">
                       {cat.category}
                     </span>
                     <div className="flex items-center gap-2 flex-shrink-0 mr-2">
                       <span className={`
                         text-xs font-semibold px-2 py-0.5 rounded-full
                         ${catChecked === catTotal
-                          ? "bg-green-100 text-green-700"
-                          : "bg-violet-200 text-violet-700"
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                          : "bg-violet-200 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300"
                         }
                       `}>
                         {catChecked}/{catTotal}
@@ -325,46 +408,91 @@ export default function ChecklistModal({
 
                   {/* Items list — no max-h, no overflow, just natural height */}
                   {!isCollapsed && (
-                    <div className="border-t border-slate-100">
+                    <div className="border-t border-slate-100 dark:border-slate-800">
                       {cat.items.map((item, itemIdx) => (
-                        <button
+                        <div
                           key={item.id}
-                          type="button"
-                          onClick={() => toggleItem(catIdx, itemIdx)}
-                          // min-h-[52px] ensures 44px+ touch target on mobile
-                          className="w-full flex items-center gap-3 px-4 py-3.5 min-h-[52px] hover:bg-slate-50 active:bg-slate-100 transition-colors text-right border-b border-slate-100 last:border-b-0 last:rounded-b-2xl"
-                          aria-pressed={item.checked}
+                          className="flex items-stretch border-b border-slate-100 dark:border-slate-800 last:border-b-0 last:rounded-b-2xl"
                         >
-                          {/* Custom checkbox */}
-                          <div className={`
-                            w-6 h-6 rounded-lg border-2 flex-shrink-0
-                            flex items-center justify-center transition-all duration-150
-                            ${item.checked
-                              ? "bg-violet-600 border-violet-600"
-                              : "bg-white border-slate-300"
-                            }
-                          `}>
-                            {item.checked && (
-                              <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
-                                <path
-                                  d="M1 5L4.5 8.5L11 1"
-                                  stroke="white"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            )}
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleItem(catIdx, itemIdx)}
+                            // min-h-[52px] ensures 44px+ touch target on mobile
+                            className="flex-1 flex items-center gap-3 px-4 py-3.5 min-h-[52px] hover:bg-slate-50 dark:hover:bg-slate-700/50 active:bg-slate-100 dark:active:bg-slate-700 transition-colors text-right"
+                            aria-pressed={item.checked}
+                          >
+                            {/* Custom checkbox */}
+                            <div className={`
+                              w-6 h-6 rounded-lg border-2 flex-shrink-0
+                              flex items-center justify-center transition-all duration-150
+                              ${item.checked
+                                ? "bg-violet-600 border-violet-600"
+                                : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                              }
+                            `}>
+                              {item.checked && (
+                                <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                                  <path
+                                    d="M1 5L4.5 8.5L11 1"
+                                    stroke="white"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
+                            </div>
 
-                          <span className={`
-                            text-sm leading-relaxed flex-1 text-right
-                            ${item.checked ? "line-through text-slate-400" : "text-slate-700"}
-                          `}>
-                            {item.text}
-                          </span>
-                        </button>
+                            <span className={`
+                              text-sm leading-relaxed flex-1 text-right
+                              ${item.checked ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-700 dark:text-slate-200"}
+                            `}>
+                              {item.text}
+                            </span>
+                          </button>
+
+                          {/* Delete control — only for user-added items */}
+                          {isCustomItem(item.id) && (
+                            <button
+                              type="button"
+                              onClick={() => removeCustomItem(catIdx, itemIdx)}
+                              aria-label="מחק פריט"
+                              title="מחק פריט"
+                              className="flex items-center justify-center px-3 text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       ))}
+
+                      {/* Add-your-own input — shown inside the "אחר" category */}
+                      {cat.category === OTHER_CATEGORY_LABEL && (
+                        <div className="flex items-center gap-2 px-4 py-3">
+                          <input
+                            type="text"
+                            value={newItemText}
+                            onChange={(e) => setNewItemText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addCustomItem();
+                              }
+                            }}
+                            placeholder="הוסף פריט משלך…"
+                            className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-800 text-right focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+                          />
+                          <button
+                            type="button"
+                            onClick={addCustomItem}
+                            disabled={!newItemText.trim()}
+                            aria-label="הוסף פריט"
+                            className="flex items-center justify-center w-10 h-10 flex-shrink-0 rounded-xl bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors active:scale-95"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -376,11 +504,11 @@ export default function ChecklistModal({
         </div>
 
         {/* ── FOOTER (fixed, never scrolls) ────────────────────────────────── */}
-        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-t border-slate-100">
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition-colors py-1 px-2 rounded-lg hover:bg-slate-100"
+            className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors py-1 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             איפוס רשימה
