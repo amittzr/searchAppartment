@@ -3,7 +3,7 @@
 // Single shimmer card placeholder shown while apartments are loading
 function SkeletonCard() {
   return (
-    <div className="flex flex-col rounded-2xl bg-white overflow-hidden shadow-card border border-slate-100">
+    <div className="flex flex-col rounded-2xl bg-white dark:bg-slate-800 overflow-hidden shadow-card border border-slate-100 dark:border-slate-700">
       {/* Image area */}
       <div className="skeleton w-full h-44" />
 
@@ -28,7 +28,7 @@ function SkeletonCard() {
         <div className="skeleton h-10 w-full rounded-lg" />
 
         {/* Action row */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700">
           <div className="flex gap-1.5">
             <div className="skeleton w-8 h-8 rounded-lg" />
             <div className="skeleton w-8 h-8 rounded-lg" />

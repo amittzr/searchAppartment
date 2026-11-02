@@ -98,23 +98,23 @@ function SignupForm() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
         <div className="w-full max-w-sm">
-          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 dark:bg-slate-800 dark:border-slate-700">
             <div className="flex flex-col items-center text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center dark:bg-green-900/40">
+                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-800">Check your email</h2>
-                <p className="text-sm text-slate-500 mt-2">
-                  We sent a confirmation link to <span className="font-medium text-slate-700">{email}</span>. 
+                <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Check your email</h2>
+                <p className="text-sm text-slate-500 mt-2 dark:text-slate-400">
+                  We sent a confirmation link to <span className="font-medium text-slate-700 dark:text-slate-200">{email}</span>. 
                   Click the link to activate your account.
                 </p>
               </div>
               <Link
                 href="/login"
-                className="text-sm text-violet-600 hover:text-violet-700 font-medium hover:underline"
+                className="text-sm text-violet-600 hover:text-violet-700 font-medium hover:underline dark:text-violet-400 dark:hover:text-violet-300"
               >
                 Back to sign in
               </Link>
@@ -126,27 +126,27 @@ function SignupForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50 flex items-center justify-center p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="w-full max-w-sm">
         {/* Brand mark */}
         <div className="flex flex-col items-center mb-8 gap-3">
           <JustPickLogo size="lg" />
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-slate-900">JustPick</h1>
-            <p className="text-sm text-slate-500 mt-1">Decide together, pick the best</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">JustPick</h1>
+            <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">Decide together, pick the best</p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-5 text-center">
+        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 dark:bg-slate-800 dark:border-slate-700">
+          <h2 className="text-lg font-semibold text-slate-800 mb-5 text-center dark:text-slate-100">
             Create your account
           </h2>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* Error banner */}
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm animate-fade-in">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm animate-fade-in dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -154,7 +154,7 @@ function SignupForm() {
 
             {/* Invite password field */}
             <div className="relative">
-              <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
                 type="password"
                 value={invitePassword}
@@ -163,13 +163,13 @@ function SignupForm() {
                   setError(null);
                 }}
                 placeholder="Invite password (ask the admin)"
-                className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300"
+                className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600"
               />
             </div>
 
             {/* Full name field */}
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 value={fullName}
@@ -180,13 +180,13 @@ function SignupForm() {
                 placeholder="Full name"
                 autoComplete="name"
                 autoFocus
-                className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300"
+                className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600"
               />
             </div>
 
             {/* Email field */}
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
                 type="email"
                 value={email}
@@ -196,13 +196,13 @@ function SignupForm() {
                 }}
                 placeholder="Email address"
                 autoComplete="email"
-                className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300"
+                className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600"
               />
             </div>
 
             {/* Password field */}
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
@@ -212,13 +212,13 @@ function SignupForm() {
                 }}
                 placeholder="Password (min 6 characters)"
                 autoComplete="new-password"
-                className="w-full px-4 py-3 pl-10 pr-11 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300"
+                className="w-full px-4 py-3 pl-10 pr-11 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors dark:text-slate-500 dark:hover:text-slate-300"
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4" strokeWidth={2} />
@@ -230,7 +230,7 @@ function SignupForm() {
 
             {/* Confirm password field */}
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
                 type={showPassword ? "text" : "password"}
                 value={confirmPassword}
@@ -240,7 +240,7 @@ function SignupForm() {
                 }}
                 placeholder="Confirm password"
                 autoComplete="new-password"
-                className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300"
+                className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600"
               />
             </div>
 
@@ -255,11 +255,11 @@ function SignupForm() {
             </button>
 
             {/* Sign in link */}
-            <p className="text-center text-sm text-slate-500">
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
               Already have an account?{" "}
               <Link 
                 href="/login" 
-                className="text-violet-600 hover:text-violet-700 font-medium hover:underline"
+                className="text-violet-600 hover:text-violet-700 font-medium hover:underline dark:text-violet-400 dark:hover:text-violet-300"
               >
                 Sign in
               </Link>

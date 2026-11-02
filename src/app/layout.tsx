@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // ── Viewport ──────────────────────────────────────────────────────────────────
 // Exported separately per Next.js 15 convention.
@@ -62,6 +63,23 @@ export default function RootLayout({
   return (
     <html lang="he" dir="ltr" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
+        {/* No-flash theme script — runs before paint to set the dark class
+            so users never see a flash of the wrong theme on load. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var t = localStorage.getItem('justpick-theme');
+                  if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  }
+                  if (t === 'dark') document.documentElement.classList.add('dark');
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         {/* Preconnect to Google Fonts for faster Inter font load */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -84,7 +102,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

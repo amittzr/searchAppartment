@@ -135,11 +135,11 @@ function RoomRangeSelector({ min, max, onChange }: RoomRangeSelectorProps) {
               w-9 h-9 text-xs font-semibold
               border transition-all duration-100 select-none
               ${isActive
-                ? `bg-orange-50 border-orange-500 text-orange-600
+                ? `bg-orange-50 border-orange-500 text-orange-600 dark:bg-orange-950/40 dark:border-orange-500 dark:text-orange-300
                    ${!isMin ? "border-l-0" : ""}
                    ${!isMax ? "border-r-0" : ""}
                    ${roundedClass}`
-                : "rounded-full bg-white border-slate-200 text-slate-600 hover:border-slate-400 hover:bg-slate-50"
+                : "rounded-full bg-white border-slate-200 text-slate-600 hover:border-slate-400 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-700"
               }
             `}
           >
@@ -220,18 +220,18 @@ export default function FilterToolbar({
 
         {/* Search input */}
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             value={filters.searchQuery}
             onChange={(e) => updateFilter("searchQuery", e.target.value)}
             placeholder="Search by address, notes..."
-            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white placeholder:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent hover:border-slate-300"
+            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white placeholder:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600"
           />
           {filters.searchQuery && (
             <button
               onClick={() => updateFilter("searchQuery", "")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 dark:hover:bg-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
             >
               <X className="w-4 h-4" />
             </button>
@@ -244,8 +244,8 @@ export default function FilterToolbar({
           className={`
             flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all sm:hidden
             ${activeFilterCount > 0
-              ? "bg-brand-50 border-brand-300 text-brand-700"
-              : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+              ? "bg-brand-50 border-brand-300 text-brand-700 dark:bg-brand-900/40 dark:border-brand-700 dark:text-brand-300"
+              : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600"
             }
           `}
         >
@@ -267,8 +267,8 @@ export default function FilterToolbar({
             className={`
               flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all
               ${filters.roomsFilter
-                ? "bg-orange-50 border-orange-400 text-orange-700"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                ? "bg-orange-50 border-orange-400 text-orange-700 dark:bg-orange-950/40 dark:border-orange-600 dark:text-orange-300"
+                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600"
               }
             `}
           >
@@ -290,14 +290,14 @@ export default function FilterToolbar({
             <select
               value={filters.priceSort}
               onChange={(e) => updateFilter("priceSort", e.target.value as SortOption)}
-              className="appearance-none pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent cursor-pointer"
+              className="appearance-none pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent cursor-pointer dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-600"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
           </div>
         </div>
 
@@ -305,7 +305,7 @@ export default function FilterToolbar({
         {activeFilterCount > 0 && (
           <button
             onClick={clearAllFilters}
-            className="flex items-center gap-1 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="flex items-center gap-1 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
           >
             <X className="w-4 h-4" />
             Clear
@@ -315,16 +315,16 @@ export default function FilterToolbar({
 
       {/* ── Expanded panel: room range + mobile sort ───────────────────────── */}
       {isExpanded && (
-        <div className="flex flex-col gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 animate-fade-in">
+        <div className="flex flex-col gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 animate-fade-in dark:bg-slate-800/60 dark:border-slate-700">
 
           {/* Room range selector */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
                 <BedDouble className="w-3.5 h-3.5" />
                 Rooms
                 {filters.roomsFilter && (
-                  <span className="normal-case font-normal text-orange-600 ml-1">
+                  <span className="normal-case font-normal text-orange-600 dark:text-orange-400 ml-1">
                     — {roomsLabel}
                   </span>
                 )}
@@ -332,7 +332,7 @@ export default function FilterToolbar({
               {filters.roomsFilter && (
                 <button
                   onClick={() => updateRooms(null, null)}
-                  className="text-xs text-slate-400 hover:text-slate-600 underline"
+                  className="text-xs text-slate-400 hover:text-slate-600 underline dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   Clear
                 </button>
@@ -343,18 +343,18 @@ export default function FilterToolbar({
               max={filters.roomsFilterMax}
               onChange={updateRooms}
             />
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
               Tap once to select · tap another to set a range · tap again to deselect
             </p>
           </div>
 
           {/* Mobile only: sort */}
           <div className="flex flex-col gap-1.5 sm:hidden">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Sort By</label>
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sort By</label>
             <select
               value={filters.priceSort}
               onChange={(e) => updateFilter("priceSort", e.target.value as SortOption)}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white"
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -378,7 +378,7 @@ export default function FilterToolbar({
                 transition-all duration-150 flex-shrink-0
                 ${isActive
                   ? "bg-brand-600 text-white shadow-sm"
-                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700"
                 }
               `}
             >
@@ -386,7 +386,7 @@ export default function FilterToolbar({
               <span>{opt.label}</span>
               <span className={`
                 px-1.5 py-0.5 rounded-md text-xs font-semibold
-                ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}
+                ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"}
               `}>
                 {count}
               </span>

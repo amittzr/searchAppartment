@@ -22,7 +22,7 @@ export default function CategoryFields({ metadata, onChange, errors = {} }: Cate
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+      <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
         <span>{categoryConfig.emoji}</span>
         <span>{categoryConfig.label} Details</span>
       </div>
@@ -56,27 +56,28 @@ function CategoryField({ field, value, onChange, error }: CategoryFieldProps) {
     w-full px-3 py-2 rounded-xl border text-sm text-slate-900 bg-white
     placeholder:text-slate-400 transition-colors duration-150
     focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent
-    ${error ? "border-red-400 bg-red-50" : "border-slate-200 hover:border-slate-300"}
+    dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500
+    ${error ? "border-red-400 bg-red-50 dark:border-red-700 dark:bg-red-950/40" : "border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600"}
   `;
 
   switch (field.type) {
     case "boolean":
       return (
-        <label className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
+        <label className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors dark:border-slate-700 dark:hover:border-slate-600">
           <input
             type="checkbox"
             checked={Boolean(value)}
             onChange={(e) => onChange(e.target.checked)}
-            className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+            className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-700"
           />
-          <span className="text-sm text-slate-700">{field.label}</span>
+          <span className="text-sm text-slate-700 dark:text-slate-200">{field.label}</span>
         </label>
       );
 
     case "number":
       return (
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-600">{field.label}</label>
+          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">{field.label}</label>
           <input
             type="number"
             value={value !== undefined ? String(value) : ""}
@@ -91,7 +92,7 @@ function CategoryField({ field, value, onChange, error }: CategoryFieldProps) {
     case "select":
       return (
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-600">{field.label}</label>
+          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">{field.label}</label>
           <select
             value={String(value ?? "")}
             onChange={(e) => onChange(e.target.value)}
@@ -112,7 +113,7 @@ function CategoryField({ field, value, onChange, error }: CategoryFieldProps) {
     default:
       return (
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-600">{field.label}</label>
+          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">{field.label}</label>
           <input
             type="text"
             value={String(value ?? "")}

@@ -427,15 +427,15 @@ export default function ApartmentModal({
       />
 
       {/* Panel */}
-      <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-modal animate-slide-up max-h-[95dvh] flex flex-col">
+      <div className="relative w-full sm:max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-modal animate-slide-up max-h-[95dvh] flex flex-col">
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
           <div>
-            <h2 id="modal-title" className="text-lg font-bold text-slate-900">
+            <h2 id="modal-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
               {isEditing ? `Edit ${categoryConfig.emoji}` : `Add New ${categoryConfig.emoji}`}
             </h2>
-            <p className="text-sm text-slate-400 mt-0.5">
+            <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
               {isEditing
                 ? "Update the details below."
                 : category === "apartment" 
@@ -446,7 +446,7 @@ export default function ApartmentModal({
           <button
             onClick={() => { if (!submitting) onClose(); }}
             aria-label="Close modal"
-            className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" strokeWidth={2} />
           </button>
@@ -458,26 +458,26 @@ export default function ApartmentModal({
 
             {/* Global submit error */}
             {submitError && (
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-sm">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{submitError}</span>
               </div>
             )}
 
             {/* ── Screenshot AI Extraction ───────────────────────────────── */}
-            <div className="flex flex-col gap-2 p-3 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200">
+            <div className="flex flex-col gap-2 p-3 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/30 dark:to-purple-900/30 border border-violet-200 dark:border-violet-900">
               {/* Header */}
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-violet-600 flex-shrink-0" />
-                <span className="text-sm font-semibold text-violet-800">
+                <span className="text-sm font-semibold text-violet-800 dark:text-violet-300">
                   AI Extract from Screenshot
                 </span>
-                <span className="ml-auto text-xs text-violet-500 font-normal">
+                <span className="ml-auto text-xs text-violet-500 dark:text-violet-400 font-normal">
                   Facebook, any site
                 </span>
               </div>
 
-              <p className="text-xs text-violet-600">
+              <p className="text-xs text-violet-600 dark:text-violet-300">
                 Upload a screenshot and AI will fill the form automatically.
               </p>
 
@@ -522,10 +522,10 @@ export default function ApartmentModal({
                 <div className={`
                   flex items-start gap-2 px-3 py-2 rounded-lg text-xs font-medium
                   ${screenshotBanner.type === "success"
-                    ? "bg-green-50 border border-green-200 text-green-700"
+                    ? "bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-900 text-green-700 dark:text-green-300"
                     : screenshotBanner.type === "warning"
-                    ? "bg-amber-50 border border-amber-300 text-amber-700"
-                    : "bg-red-50 border border-red-200 text-red-700"
+                    ? "bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-900 text-amber-700 dark:text-amber-300"
+                    : "bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300"
                   }
                 `}>
                   {screenshotBanner.type === "success"
@@ -575,10 +575,10 @@ export default function ApartmentModal({
                     text-sm font-semibold border transition-all duration-150
                     ${
                       autoFill.status === "success"
-                        ? "bg-green-50 border-green-300 text-green-700"
+                        ? "bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-900 text-green-700 dark:text-green-300"
                         : canAutoFill
                         ? "bg-brand-600 border-brand-600 text-white hover:bg-brand-700 shadow-sm active:scale-95"
-                        : "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                        : "bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed"
                     }
                   `}
                 >
@@ -606,8 +606,8 @@ export default function ApartmentModal({
                 <div
                   className={`flex items-start gap-2 p-3 rounded-xl text-sm border animate-fade-in ${
                     autoFill.status === "captcha"
-                      ? "bg-amber-50 border-amber-200 text-amber-700"
-                      : "bg-red-50 border-red-200 text-red-700"
+                      ? "bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300"
+                      : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-900 text-red-700 dark:text-red-300"
                   }`}
                 >
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -617,7 +617,7 @@ export default function ApartmentModal({
 
             {/* Auto-fill success confirmation */}
             {autoFill.status === "success" && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm animate-fade-in">
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-900 text-green-700 dark:text-green-300 text-sm animate-fade-in">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                 <span>Fields filled from Yad2. Review and adjust if needed.</span>
               </div>
@@ -732,10 +732,10 @@ export default function ApartmentModal({
 
             {/* ── Upload Photos ─────────────────────────────────────── */}
             <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                <span className="text-slate-400"><Upload className="w-4 h-4" /></span>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <span className="text-slate-400 dark:text-slate-500"><Upload className="w-4 h-4" /></span>
                 Upload Photos
-                <span className="text-slate-400 font-normal text-xs ml-1">— JPEG, PNG, WebP up to 5 MB each</span>
+                <span className="text-slate-400 dark:text-slate-500 font-normal text-xs ml-1">— JPEG, PNG, WebP up to 5 MB each</span>
               </label>
 
               {/* Hidden file input */}
@@ -756,8 +756,8 @@ export default function ApartmentModal({
                 disabled={uploadingImages || submitting}
                 className="
                   flex items-center justify-center gap-2 w-full py-2.5 rounded-xl
-                  border-2 border-dashed border-slate-300 text-slate-500 text-sm
-                  hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50
+                  border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 text-sm
+                  hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30
                   disabled:opacity-50 disabled:cursor-not-allowed transition-all
                 "
               >
@@ -772,7 +772,7 @@ export default function ApartmentModal({
               {uploadErrors.length > 0 && (
                 <div className="flex flex-col gap-1">
                   {uploadErrors.map((err, i) => (
-                    <p key={i} className="flex items-center gap-1 text-xs text-red-500 font-medium">
+                    <p key={i} className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400 font-medium">
                       <AlertCircle className="w-3 h-3 flex-shrink-0" />
                       {err}
                     </p>
@@ -784,7 +784,7 @@ export default function ApartmentModal({
               {form.images.length > 0 && (
                 <div className="flex gap-2 flex-wrap mt-1">
                   {form.images.map((url, idx) => (
-                    <div key={idx} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-slate-200 flex-shrink-0">
+                    <div key={idx} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 flex-shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={url}
@@ -874,7 +874,7 @@ export default function ApartmentModal({
 
             {/* ── Status selector ──────────────────────────────────────── */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-slate-700">Status</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Status</label>
               <div className="grid grid-cols-2 gap-2">
                 {STATUS_OPTIONS.map((opt) => (
                   <button
@@ -886,8 +886,8 @@ export default function ApartmentModal({
                       transition-all duration-150
                       ${
                         form.status === opt.value
-                          ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                          ? "border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 shadow-sm"
+                          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
                       }
                     `}
                   >
@@ -902,12 +902,12 @@ export default function ApartmentModal({
         </div>
 
         {/* ── Footer ─────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex-shrink-0">
           <button
             type="button"
             onClick={() => { if (!submitting) onClose(); }}
             disabled={submitting}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+            className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -931,10 +931,10 @@ export default function ApartmentModal({
 
 function inputClass(hasError: boolean): string {
   return `
-    w-full px-3 py-2.5 rounded-xl border text-sm text-slate-900 bg-white
-    placeholder:text-slate-400 transition-colors duration-150
+    w-full px-3 py-2.5 rounded-xl border text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800
+    placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors duration-150
     focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent
-    ${hasError ? "border-red-400 bg-red-50" : "border-slate-200 hover:border-slate-300"}
+    ${hasError ? "border-red-400 bg-red-50 dark:bg-red-900/30" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}
   `;
 }
 
@@ -950,17 +950,17 @@ interface FieldProps {
 function Field({ label, icon, error, hint, required, children }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-        <span className="text-slate-400">{icon}</span>
+      <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-200">
+        <span className="text-slate-400 dark:text-slate-500">{icon}</span>
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
         {hint && !error && (
-          <span className="text-slate-400 font-normal text-xs ml-1">— {hint}</span>
+          <span className="text-slate-400 dark:text-slate-500 font-normal text-xs ml-1">— {hint}</span>
         )}
       </label>
       {children}
       {error && (
-        <p className="flex items-center gap-1 text-xs text-red-500 font-medium">
+        <p className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400 font-medium">
           <AlertCircle className="w-3 h-3 flex-shrink-0" />
           {error}
         </p>

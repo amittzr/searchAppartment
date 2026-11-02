@@ -41,29 +41,29 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-10 dark:bg-slate-900 dark:border-slate-800">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 transition-colors"
+            className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 transition-colors dark:text-slate-400 dark:hover:text-slate-200"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm font-medium">Back</span>
           </Link>
           <div className="flex-1" />
-          <BookMarked className="w-5 h-5 text-brand-600" />
+          <BookMarked className="w-5 h-5 text-brand-600 dark:text-brand-400" />
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
         {/* Title */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2 dark:text-slate-100">
             Setup Yad2 Auto-Fill
           </h1>
-          <p className="text-slate-500">
+          <p className="text-slate-500 dark:text-slate-400">
             Add apartments from Yad2 with one tap - works on mobile and desktop
           </p>
         </div>
@@ -75,7 +75,7 @@ export default function SetupPage() {
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
               activeTab === "mobile"
                 ? "bg-brand-600 text-white shadow-md"
-                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:border-slate-600"
             }`}
           >
             <Smartphone className="w-4 h-4" />
@@ -86,7 +86,7 @@ export default function SetupPage() {
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
               activeTab === "desktop"
                 ? "bg-brand-600 text-white shadow-md"
-                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:border-slate-600"
             }`}
           >
             <Monitor className="w-4 h-4" />
@@ -95,7 +95,7 @@ export default function SetupPage() {
         </div>
 
         {/* Instructions */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-800 dark:border-slate-700">
           {activeTab === "mobile" ? (
             <MobileInstructions onCopy={handleCopy} copied={copied} code={bookmarkletCode} />
           ) : (
@@ -104,9 +104,9 @@ export default function SetupPage() {
         </div>
 
         {/* How to use */}
-        <div className="mt-8 bg-green-50 rounded-2xl border border-green-200 p-6">
-          <h2 className="font-bold text-green-800 mb-3">How to use:</h2>
-          <ol className="space-y-2 text-green-700 text-sm">
+        <div className="mt-8 bg-green-50 rounded-2xl border border-green-200 p-6 dark:bg-green-900/20 dark:border-green-800">
+          <h2 className="font-bold text-green-800 mb-3 dark:text-green-300">How to use:</h2>
+          <ol className="space-y-2 text-green-700 text-sm dark:text-green-400">
             <li className="flex gap-2">
               <span className="font-bold">1.</span>
               <span>Browse Yad2 and find an apartment you like</span>
@@ -140,23 +140,23 @@ function MobileInstructions({
   code: string;
 }) {
   return (
-    <div className="divide-y divide-slate-100">
+    <div className="divide-y divide-slate-100 dark:divide-slate-700">
       {/* Step 1 */}
       <div className="p-5">
         <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0 dark:bg-brand-900/40 dark:text-brand-300">
             1
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-slate-900 mb-1">Copy the bookmarklet code</h3>
-            <p className="text-sm text-slate-500 mb-3">
+            <h3 className="font-semibold text-slate-900 mb-1 dark:text-slate-100">Copy the bookmarklet code</h3>
+            <p className="text-sm text-slate-500 mb-3 dark:text-slate-400">
               Tap the button below to copy the magic code to your clipboard.
             </p>
             <button
               onClick={onCopy}
               className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all ${
                 copied
-                  ? "bg-green-100 text-green-700 border border-green-300"
+                  ? "bg-green-100 text-green-700 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800"
                   : "bg-brand-600 text-white hover:bg-brand-700 shadow-md"
               }`}
             >
@@ -179,15 +179,15 @@ function MobileInstructions({
       {/* Step 2 */}
       <div className="p-5">
         <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0 dark:bg-brand-900/40 dark:text-brand-300">
             2
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-slate-900 mb-1">Create a new bookmark</h3>
-            <p className="text-sm text-slate-500">
+            <h3 className="font-semibold text-slate-900 mb-1 dark:text-slate-100">Create a new bookmark</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               <strong>Safari (iPhone):</strong> Tap the share button, then "Add Bookmark". Name it "Add to Tracker".
             </p>
-            <p className="text-sm text-slate-500 mt-2">
+            <p className="text-sm text-slate-500 mt-2 dark:text-slate-400">
               <strong>Chrome (Android):</strong> Tap the three dots menu → Bookmarks → Add bookmark. Name it "Add to Tracker".
             </p>
           </div>
@@ -197,15 +197,15 @@ function MobileInstructions({
       {/* Step 3 */}
       <div className="p-5">
         <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0 dark:bg-brand-900/40 dark:text-brand-300">
             3
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-slate-900 mb-1">Edit the bookmark</h3>
-            <p className="text-sm text-slate-500">
+            <h3 className="font-semibold text-slate-900 mb-1 dark:text-slate-100">Edit the bookmark</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               <strong>Safari:</strong> Go to Bookmarks, long-press "Add to Tracker", tap Edit. Delete the URL and paste the copied code.
             </p>
-            <p className="text-sm text-slate-500 mt-2">
+            <p className="text-sm text-slate-500 mt-2 dark:text-slate-400">
               <strong>Chrome:</strong> Go to Bookmarks, tap the three dots next to "Add to Tracker", tap Edit. Replace the URL with the copied code.
             </p>
           </div>
@@ -213,14 +213,14 @@ function MobileInstructions({
       </div>
 
       {/* Step 4 */}
-      <div className="p-5 bg-slate-50">
+      <div className="p-5 bg-slate-50 dark:bg-slate-900/50">
         <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-bold flex-shrink-0 dark:bg-green-900/40 dark:text-green-300">
             ✓
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-slate-900 mb-1">Done!</h3>
-            <p className="text-sm text-slate-500">
+            <h3 className="font-semibold text-slate-900 mb-1 dark:text-slate-100">Done!</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Now when you're on any Yad2 listing, open your bookmarks and tap "Add to Tracker". 
               The apartment details will be automatically filled in!
             </p>
@@ -241,22 +241,22 @@ function DesktopInstructions({
   code: string;
 }) {
   return (
-    <div className="divide-y divide-slate-100">
+    <div className="divide-y divide-slate-100 dark:divide-slate-700">
       {/* Step 1 */}
       <div className="p-5">
         <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0 dark:bg-brand-900/40 dark:text-brand-300">
             1
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-slate-900 mb-1">Show your bookmarks bar</h3>
-            <p className="text-sm text-slate-500">
+            <h3 className="font-semibold text-slate-900 mb-1 dark:text-slate-100">Show your bookmarks bar</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               <strong>Chrome:</strong> Press Ctrl+Shift+B (Windows) or Cmd+Shift+B (Mac)
             </p>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">
               <strong>Safari:</strong> View menu → Show Favorites Bar
             </p>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">
               <strong>Firefox:</strong> View → Toolbars → Bookmarks Toolbar
             </p>
           </div>
@@ -266,12 +266,12 @@ function DesktopInstructions({
       {/* Step 2 - Drag button */}
       <div className="p-5">
         <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold flex-shrink-0 dark:bg-brand-900/40 dark:text-brand-300">
             2
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-slate-900 mb-1">Drag this button to your bookmarks bar</h3>
-            <p className="text-sm text-slate-500 mb-3">
+            <h3 className="font-semibold text-slate-900 mb-1 dark:text-slate-100">Drag this button to your bookmarks bar</h3>
+            <p className="text-sm text-slate-500 mb-3 dark:text-slate-400">
               Click and drag the button below to your bookmarks bar:
             </p>
             <a
@@ -283,7 +283,7 @@ function DesktopInstructions({
               <BookMarked className="w-4 h-4" />
               Add to Tracker
             </a>
-            <p className="text-xs text-slate-400 mt-2">
+            <p className="text-xs text-slate-400 mt-2 dark:text-slate-500">
               (Don't click it here - drag it to your bookmarks bar!)
             </p>
           </div>
@@ -291,22 +291,22 @@ function DesktopInstructions({
       </div>
 
       {/* Alternative: Copy */}
-      <div className="p-5 bg-slate-50">
+      <div className="p-5 bg-slate-50 dark:bg-slate-900/50">
         <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-sm font-bold flex-shrink-0 dark:bg-slate-700 dark:text-slate-300">
             ?
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-slate-900 mb-1">Can't drag? Copy manually</h3>
-            <p className="text-sm text-slate-500 mb-3">
+            <h3 className="font-semibold text-slate-900 mb-1 dark:text-slate-100">Can't drag? Copy manually</h3>
+            <p className="text-sm text-slate-500 mb-3 dark:text-slate-400">
               Create a new bookmark, name it "Add to Tracker", and paste this as the URL:
             </p>
             <button
               onClick={onCopy}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
                 copied
-                  ? "bg-green-100 text-green-700 border border-green-300"
-                  : "bg-white text-slate-700 border border-slate-300 hover:border-slate-400"
+                  ? "bg-green-100 text-green-700 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800"
+                  : "bg-white text-slate-700 border border-slate-300 hover:border-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:border-slate-500"
               }`}
             >
               {copied ? (

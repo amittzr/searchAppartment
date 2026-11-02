@@ -20,6 +20,7 @@ import {
   Calendar,
   Gauge,
   ListChecks,
+  MessageCircle,
 } from "lucide-react";
 import type { Apartment, ReactionStatus, CategoryType, ItemMetadata, CarMetadata, BrideVenueMetadata, ApartmentMetadata, NotesThread } from "@/types/database";
 import { useHousehold } from "@/contexts/HouseholdContext";
@@ -33,6 +34,9 @@ interface ApartmentCardProps {
   onReactionChange: (id: string, reaction: ReactionStatus | null) => void;
   onMarkViewed: (id: string) => void;
   onChecklist: (apartment: Apartment) => void;
+  onComments: (apartment: Apartment) => void;
+  /** When true, briefly highlight this card (used by activity-feed jump). */
+  highlight?: boolean;
 }
 
 // ── Reaction configuration ───────────────────────────────────────────────────
@@ -43,23 +47,23 @@ const REACTION_CONFIG: Record<
   liked: {
     label: "Liked",
     emoji: "❤️",
-    bgClass: "bg-red-50",
-    textClass: "text-red-600",
-    borderClass: "border-red-200",
+    bgClass: "bg-red-50 dark:bg-red-900/30",
+    textClass: "text-red-600 dark:text-red-300",
+    borderClass: "border-red-200 dark:border-red-900",
   },
   review: {
     label: "Review",
     emoji: "🤔",
-    bgClass: "bg-amber-50",
-    textClass: "text-amber-600",
-    borderClass: "border-amber-200",
+    bgClass: "bg-amber-50 dark:bg-amber-900/30",
+    textClass: "text-amber-600 dark:text-amber-300",
+    borderClass: "border-amber-200 dark:border-amber-900",
   },
   rejected: {
     label: "Rejected",
     emoji: "❌",
-    bgClass: "bg-slate-100",
-    textClass: "text-slate-500",
-    borderClass: "border-slate-200",
+    bgClass: "bg-slate-100 dark:bg-slate-700",
+    textClass: "text-slate-500 dark:text-slate-400",
+    borderClass: "border-slate-200 dark:border-slate-700",
   },
 };
 
@@ -115,6 +119,8 @@ export default function ApartmentCard({
   onReactionChange,
   onMarkViewed,
   onChecklist,
+  onComments,
+  highlight,
 }: ApartmentCardProps) {
   const { username, partnerName, members, category, categoryConfig, profile } = useHousehold();
   
@@ -189,7 +195,7 @@ export default function ApartmentCard({
     // Rooms badge for apartments and venues
     if ((category === "apartment" || category === "bride_venue") && apartment.rooms) {
       badges.push(
-        <span key="rooms" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-purple-100 text-purple-700 font-semibold border border-purple-200`}>
+        <span key="rooms" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold border border-purple-200 dark:border-purple-900`}>
           <BedDouble className={expanded ? "w-4 h-4" : "w-3 h-3"} />
           {apartment.rooms} {category === "bride_venue" ? "suites" : "rooms"}
         </span>
@@ -201,7 +207,7 @@ export default function ApartmentCard({
       const carMeta = metadata as CarMetadata;
       if (carMeta.year) {
         badges.push(
-          <span key="year" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-blue-100 text-blue-700 font-semibold border border-blue-200`}>
+          <span key="year" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-900`}>
             <Calendar className={expanded ? "w-4 h-4" : "w-3 h-3"} />
             {carMeta.year}
           </span>
@@ -209,7 +215,7 @@ export default function ApartmentCard({
       }
       if (carMeta.mileage) {
         badges.push(
-          <span key="mileage" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-green-100 text-green-700 font-semibold border border-green-200`}>
+          <span key="mileage" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold border border-green-200 dark:border-green-900`}>
             <Gauge className={expanded ? "w-4 h-4" : "w-3 h-3"} />
             {(carMeta.mileage / 1000).toFixed(0)}K km
           </span>
@@ -217,7 +223,7 @@ export default function ApartmentCard({
       }
       if (carMeta.fuel_type) {
         badges.push(
-          <span key="fuel" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-amber-100 text-amber-700 font-semibold border border-amber-200`}>
+          <span key="fuel" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-900`}>
             <Fuel className={expanded ? "w-4 h-4" : "w-3 h-3"} />
             {carMeta.fuel_type}
           </span>
@@ -230,7 +236,7 @@ export default function ApartmentCard({
       const venueMeta = metadata as BrideVenueMetadata;
       if (venueMeta.distance_km) {
         badges.push(
-          <span key="distance" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-teal-100 text-teal-700 font-semibold border border-teal-200`}>
+          <span key="distance" className={`flex items-center gap-1 ${expanded ? "px-2.5 py-1 rounded-lg text-sm" : "px-2 py-0.5 rounded-md text-xs"} bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200 dark:border-teal-900`}>
             <MapPin className={expanded ? "w-4 h-4" : "w-3 h-3"} />
             {venueMeta.distance_km} km
           </span>
@@ -252,9 +258,9 @@ export default function ApartmentCard({
         />
         
         {/* Expanded Card */}
-        <div className="fixed inset-4 sm:inset-8 lg:inset-16 z-50 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-up">
+        <div className="fixed inset-4 sm:inset-8 lg:inset-16 z-50 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-up">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
             <div className="flex items-center gap-2 flex-wrap">
               {/* Category emoji */}
               <span className="text-lg">{categoryConfig.emoji}</span>
@@ -263,7 +269,7 @@ export default function ApartmentCard({
               <ReactionBadge name={username} reaction={myReaction} isMe />
               <ReactionBadge name={partnerName} reaction={partnerReaction} />
               {isMatch && (
-                <span className="px-2.5 py-1 rounded-lg bg-green-100 text-green-700 text-xs font-semibold border border-green-200 animate-pulse">
+                <span className="px-2.5 py-1 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold border border-green-200 dark:border-green-900 animate-pulse">
                   💕 Match!
                 </span>
               )}
@@ -276,7 +282,7 @@ export default function ApartmentCard({
             </div>
             <button
               onClick={toggleExpanded}
-              className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Close expanded view"
             >
               <X className="w-5 h-5" strokeWidth={2} />
@@ -310,14 +316,14 @@ export default function ApartmentCard({
               <div className="lg:w-1/2 xl:w-2/5 p-4 sm:p-6 flex flex-col gap-5">
                 {/* Price */}
                 <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="text-3xl font-bold text-slate-900">
+                  <span className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                     ₪{formatPrice(apartment.price)}
                   </span>
-                  {priceUnit && <span className="text-slate-400 text-sm">{priceUnit}</span>}
+                  {priceUnit && <span className="text-slate-400 dark:text-slate-500 text-sm">{priceUnit}</span>}
                 </div>
 
                 {/* Title */}
-                <h2 className="text-lg font-semibold text-slate-900 leading-snug">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 leading-snug">
                   {apartment.title}
                 </h2>
 
@@ -327,12 +333,12 @@ export default function ApartmentCard({
                 </div>
 
                 {/* Contact Info */}
-                <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-xl">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</h3>
+                <div className="flex flex-col gap-3 p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
+                  <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Contact</h3>
                   
                   {apartment.seller_name && (
-                    <div className="flex items-center gap-2 text-sm text-slate-700">
-                      <User className="w-4 h-4 text-slate-400" />
+                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                      <User className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                       <span className="font-medium">{apartment.seller_name}</span>
                     </div>
                   )}
@@ -348,13 +354,13 @@ export default function ApartmentCard({
                   )}
                   
                   {!apartment.seller_name && !apartment.phone && (
-                    <p className="text-sm text-slate-400 italic">No contact info</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 italic">No contact info</p>
                   )}
                 </div>
 
                 {/* Notes (full thread, read-only in expanded view) */}
                 {notesThread.length > 0 && (
-                  <div className="flex flex-col gap-2 p-4 bg-amber-50 rounded-xl border border-amber-100">
+                  <div className="flex flex-col gap-2 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-900">
                     <NotesThreadComponent
                       thread={notesThread}
                       newNote=""
@@ -368,7 +374,7 @@ export default function ApartmentCard({
 
                 {/* Reaction Selector */}
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Your Reaction</h3>
+                  <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Your Reaction</h3>
                   <div className="flex gap-2">
                     {REACTION_ACTIONS.map(({ reaction, icon, label, activeClass }) => (
                       <button
@@ -380,7 +386,7 @@ export default function ApartmentCard({
                           ${
                             myReaction === reaction
                               ? activeClass
-                              : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 bg-white"
+                              : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-700 dark:hover:text-slate-200 bg-white dark:bg-slate-800"
                           }
                         `}
                       >
@@ -392,13 +398,13 @@ export default function ApartmentCard({
                   
                   {/* Partner's reaction */}
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-slate-400">{partnerName}&apos;s reaction:</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">{partnerName}&apos;s reaction:</span>
                     {partnerReaction ? (
                       <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${REACTION_CONFIG[partnerReaction].bgClass} ${REACTION_CONFIG[partnerReaction].textClass}`}>
                         {REACTION_CONFIG[partnerReaction].emoji} {REACTION_CONFIG[partnerReaction].label}
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-400 italic">Not yet voted</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500 italic">Not yet voted</span>
                     )}
                   </div>
                 </div>
@@ -406,13 +412,13 @@ export default function ApartmentCard({
                 <div className="flex-1" />
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                   {apartment.url && (
                     <a
                       href={apartment.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-brand-600 hover:border-brand-300 bg-white transition-colors text-sm font-medium"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:border-brand-300 bg-white dark:bg-slate-800 transition-colors text-sm font-medium"
                     >
                       <ExternalLink className="w-4 h-4" />
                       Open Original
@@ -423,7 +429,7 @@ export default function ApartmentCard({
                       setIsExpanded(false);
                       onEdit(apartment);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-brand-600 hover:border-brand-300 bg-white transition-colors text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:border-brand-300 bg-white dark:bg-slate-800 transition-colors text-sm font-medium"
                   >
                     <Pencil className="w-4 h-4" />
                     Edit
@@ -435,14 +441,14 @@ export default function ApartmentCard({
                       setIsExpanded(false);
                       onChecklist(apartment);
                     }}
-                    className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-violet-600 hover:border-violet-300 bg-white transition-colors text-sm font-medium"
+                    className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-violet-600 hover:border-violet-300 bg-white dark:bg-slate-800 transition-colors text-sm font-medium"
                   >
                     <div className="flex items-center gap-2">
                       <ListChecks className="w-4 h-4" />
                       Checklist
                     </div>
                     {checklistProgress !== null && (
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
                             checklistProgress === 100 ? "bg-green-500" : "bg-violet-500"
@@ -458,7 +464,7 @@ export default function ApartmentCard({
                       setIsExpanded(false);
                       onDelete(apartment.id);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-red-500 hover:border-red-200 bg-white transition-colors text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-red-500 hover:border-red-200 bg-white dark:bg-slate-800 transition-colors text-sm font-medium"
                   >
                     <Trash2 className="w-4 h-4" />
                     Delete
@@ -475,16 +481,21 @@ export default function ApartmentCard({
   // ── Normal Card View ────────────────────────────────────────────────────────
   return (
     <article
+      id={`apt-${apartment.id}`}
       className={`
-        group relative flex flex-col rounded-2xl bg-white overflow-hidden
+        group relative flex flex-col rounded-2xl bg-white dark:bg-slate-800 overflow-hidden
         shadow-card hover:shadow-card-hover border
-        transition-all duration-200 animate-fade-in
+        transition-all duration-300 animate-fade-in scroll-mt-24
         ${cardBorderClass}
+        ${highlight
+          ? "ring-4 ring-brand-400/70 dark:ring-brand-400/60 shadow-card-hover animate-pulse"
+          : ""
+        }
       `}
     >
       {/* Hero Image */}
       <div 
-        className="relative w-full h-44 bg-slate-100 overflow-hidden flex-shrink-0 cursor-pointer"
+        className="relative w-full h-44 bg-slate-100 dark:bg-slate-700 overflow-hidden flex-shrink-0 cursor-pointer"
         onClick={toggleExpanded}
       >
         {allImages.length > 0 ? (
@@ -507,7 +518,7 @@ export default function ApartmentCard({
             )}
           </>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 dark:text-slate-600">
             {category === "car" ? (
               <Car className="w-10 h-10 mb-1" strokeWidth={1.5} />
             ) : (
@@ -572,7 +583,7 @@ export default function ApartmentCard({
       <div className="flex flex-col flex-1 p-4 gap-3">
         {/* Title with category-specific badges */}
         <div className="flex items-start justify-between gap-2">
-          <h2 className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug flex-1">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 line-clamp-2 leading-snug flex-1">
             {apartment.title}
           </h2>
           <div className="flex flex-wrap gap-1 flex-shrink-0">
@@ -583,7 +594,7 @@ export default function ApartmentCard({
         {/* Seller and phone */}
         <div className="flex flex-col gap-1.5">
           {apartment.seller_name && (
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
               <User className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2} />
               <span className="font-medium">{apartment.seller_name}</span>
             </div>
@@ -591,30 +602,53 @@ export default function ApartmentCard({
           {apartment.phone && (
             <a
               href={`tel:${apartment.phone}`}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-600 transition-colors w-fit"
+              className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-brand-600 transition-colors w-fit"
             >
               <Phone className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2} />
               <span className="font-medium">{apartment.phone}</span>
             </a>
           )}
+
+          {/* Comments trigger — opens the dedicated comments chat.
+              Sits directly below the phone number for quick access. */}
+          <button
+            type="button"
+            onClick={() => onComments(apartment)}
+            className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium transition-colors w-fit mt-0.5"
+            aria-label="Open comments"
+          >
+            <MessageCircle className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2} />
+            <span>
+              {notesThread.length > 0
+                ? `${notesThread.length} ${notesThread.length === 1 ? "comment" : "comments"}`
+                : "Add a comment"}
+            </span>
+          </button>
         </div>
 
-        {/* Notes (compact read-only) */}
+        {/* Notes (compact read-only preview) — also opens the chat on click */}
         {notesThread.length > 0 && (
-          <NotesThreadComponent
-            thread={notesThread}
-            newNote=""
-            onNewNote={() => {}}
-            onSend={() => {}}
-            currentUserId={profile?.id ?? ""}
-            compact
-          />
+          <button
+            type="button"
+            onClick={() => onComments(apartment)}
+            className="text-left w-full"
+            aria-label="Open comments"
+          >
+            <NotesThreadComponent
+              thread={notesThread}
+              newNote=""
+              onNewNote={() => {}}
+              onSend={() => {}}
+              currentUserId={profile?.id ?? ""}
+              compact
+            />
+          </button>
         )}
 
         <div className="flex-1" />
 
         {/* Action Row */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
           {/* Reaction toggle buttons */}
           <div className="flex items-center gap-1.5">
             {REACTION_ACTIONS.map(({ reaction, icon, label, activeClass }) => (
@@ -629,7 +663,7 @@ export default function ApartmentCard({
                   ${
                     myReaction === reaction
                       ? activeClass
-                      : "border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 bg-white"
+                      : "border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-600 dark:hover:text-slate-300 bg-white dark:bg-slate-800"
                   }
                 `}
               >
@@ -647,7 +681,7 @@ export default function ApartmentCard({
                 rel="noopener noreferrer"
                 aria-label="Open original listing"
                 title="Open original listing"
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-brand-600 hover:border-brand-300 bg-white transition-colors"
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-brand-600 hover:border-brand-300 bg-white dark:bg-slate-800 transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
               </a>
@@ -657,7 +691,7 @@ export default function ApartmentCard({
               onClick={() => onEdit(apartment)}
               aria-label="Edit"
               title="Edit"
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-brand-600 hover:border-brand-300 bg-white transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-brand-600 hover:border-brand-300 bg-white dark:bg-slate-800 transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
             </button>
@@ -668,14 +702,14 @@ export default function ApartmentCard({
                 onClick={() => onChecklist(apartment)}
                 aria-label="Inspection checklist"
                 title="Inspection checklist"
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-violet-600 hover:border-violet-300 bg-white transition-colors"
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-violet-600 hover:border-violet-300 bg-white dark:bg-slate-800 transition-colors"
               >
                 <ListChecks className="w-3.5 h-3.5" strokeWidth={2} />
               </button>
 
               {/* Mini progress bar — only shown when checklist has been started */}
               {checklistProgress !== null && (
-                <div className="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-8 h-1 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
                       checklistProgress === 100 ? "bg-green-500" : "bg-violet-500"
@@ -690,7 +724,7 @@ export default function ApartmentCard({
               onClick={() => onDelete(apartment.id)}
               aria-label="Delete"
               title="Delete"
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 bg-white transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-red-500 hover:border-red-200 bg-white dark:bg-slate-800 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
             </button>
@@ -713,7 +747,7 @@ interface ReactionBadgeProps {
 function ReactionBadge({ name, reaction, isMe, compact }: ReactionBadgeProps) {
   if (!reaction) {
     return compact ? null : (
-      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-xs font-medium border border-slate-200">
+      <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 text-xs font-medium border border-slate-200 dark:border-slate-700">
         {isMe ? "You" : name}: 🏠
       </span>
     );

@@ -40,10 +40,10 @@ function NoteBubble({ note, isMine }: NoteBubbleProps) {
     <div className={`flex flex-col gap-0.5 ${isMine ? "items-end" : "items-start"}`}>
       {/* Author + timestamp */}
       <div className="flex items-center gap-1.5 px-1">
-        <span className="text-xs font-semibold text-slate-500">
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
           {isMine ? "You" : note.userName}
         </span>
-        <span className="text-xs text-slate-400">{formatTimestamp(note.createdAt)}</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500">{formatTimestamp(note.createdAt)}</span>
       </div>
 
       {/* Bubble */}
@@ -52,7 +52,7 @@ function NoteBubble({ note, isMine }: NoteBubbleProps) {
           max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words
           ${isMine
             ? "bg-brand-600 text-white rounded-br-sm"
-            : "bg-slate-100 text-slate-800 rounded-bl-sm"
+            : "bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-sm"
           }
         `}
       >
@@ -72,6 +72,7 @@ interface NotesThreadProps {
   currentUserId: string;
   disabled?:    boolean;
   compact?:     boolean; // compact = card view (read-only, truncated)
+  composeOnly?: boolean; // composeOnly = render only the compose box (thread rendered by caller)
 }
 
 export default function NotesThreadComponent({
@@ -82,6 +83,7 @@ export default function NotesThreadComponent({
   currentUserId,
   disabled,
   compact,
+  composeOnly,
 }: NotesThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -105,17 +107,53 @@ export default function NotesThreadComponent({
     if (!thread || thread.length === 0) return null;
     const last = thread[thread.length - 1];
     return (
-      <div className="flex items-start gap-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg px-2.5 py-2">
+      <div className="flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 rounded-lg px-2.5 py-2">
         <StickyNote className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-400" strokeWidth={2} />
         <p className="line-clamp-2 leading-relaxed">
-          <span className="font-semibold text-slate-600">
+          <span className="font-semibold text-slate-600 dark:text-slate-300">
             {last.userId === currentUserId ? "You" : last.userName}:
           </span>{" "}
           {last.text}
           {thread.length > 1 && (
-            <span className="text-slate-400 ml-1">+{thread.length - 1} more</span>
+            <span className="text-slate-400 dark:text-slate-500 ml-1">+{thread.length - 1} more</span>
           )}
         </p>
+      </div>
+    );
+  }
+
+  // ── Compose-only view (thread rendered by the caller, e.g. CommentsModal) ──
+  if (composeOnly) {
+    return (
+      <div className="flex items-end gap-2">
+        <textarea
+          value={newNote}
+          onChange={(e) => onNewNote(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Write a comment… (Ctrl+Enter to send)"
+          rows={2}
+          disabled={disabled}
+          className="
+            flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100
+            placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-800 resize-none
+            focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent
+            disabled:opacity-50
+          "
+        />
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={!newNote.trim() || disabled}
+          aria-label="Send comment"
+          className="
+            flex items-center justify-center w-10 h-10 rounded-xl
+            bg-brand-600 text-white hover:bg-brand-700
+            disabled:opacity-40 disabled:cursor-not-allowed
+            transition-colors active:scale-95
+          "
+        >
+          <Send className="w-4 h-4" />
+        </button>
       </div>
     );
   }
@@ -128,16 +166,16 @@ export default function NotesThreadComponent({
         <StickyNote className="w-3.5 h-3.5" />
         Notes
         {thread.length > 0 && (
-          <span className="ml-auto font-normal text-slate-400 normal-case">
+          <span className="ml-auto font-normal text-slate-400 dark:text-slate-500 normal-case">
             {thread.length} {thread.length === 1 ? "note" : "notes"}
           </span>
         )}
       </div>
 
       {/* Thread scroll area */}
-      <div className="flex flex-col gap-3 max-h-48 overflow-y-auto px-1 py-2 bg-amber-50 rounded-xl border border-amber-100">
+      <div className="flex flex-col gap-3 max-h-48 overflow-y-auto px-1 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-900">
         {thread.length === 0 ? (
-          <p className="text-xs text-slate-400 italic text-center py-4">
+          <p className="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">
             No notes yet — add the first one!
           </p>
         ) : (
@@ -162,8 +200,8 @@ export default function NotesThreadComponent({
           rows={2}
           disabled={disabled}
           className="
-            flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-900
-            placeholder:text-slate-400 bg-white resize-none
+            flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100
+            placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-800 resize-none
             focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent
             disabled:opacity-50
           "
