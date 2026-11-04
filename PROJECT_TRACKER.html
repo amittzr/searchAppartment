@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JustPick — Project Tracker v3.0</title>
+  <title>JustPick — Project Tracker v3.1</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.6; padding: 2rem 1rem; }
@@ -50,13 +50,57 @@
     <h1>📍 JustPick</h1>
     <p>Collaborative decision-making app for couples — track apartments, venues, cars & more together</p>    <div class="header-meta">
       <span class="badge">✅ Live</span>
-      <span class="badge badge-new">v3.0</span>
+      <span class="badge badge-new">v3.1</span>
       <span class="badge">Next.js 15</span>
       <span class="badge">Supabase Auth</span>
       <span class="badge">Gemini Vision</span>
       <span class="badge">PWA</span>
       <span class="badge">Web Push</span>
-      <span class="badge">September 2026</span>
+      <span class="badge">Dark Mode</span>
+      <span class="badge">November 2026</span>
+    </div>
+  </div>
+
+  <!-- What's New in v3.1 -->
+  <div class="highlight-box">
+    <h3>🚀 What's New in v3.1</h3>
+    <div class="two-col">
+      <div>
+        <strong>Independent Comments Chat</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>💬 trigger on every card, right below the phone</li>
+          <li>Dedicated chat modal — no edit form needed</li>
+          <li>Optimistic send with rollback on failure</li>
+          <li>Push notification to the partner on each comment</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Custom Checklist Items</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>New "אחר ➕" category, always available</li>
+          <li>Add your own points inline; delete them anytime</li>
+          <li>Counts toward progress, saved to Supabase</li>
+          <li>Reset keeps your custom items</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Activity → Jump to Item</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>Click an activity entry to go to its card</li>
+          <li>Smooth scroll + pulsing highlight ring</li>
+          <li>Clears filters if they hide the item</li>
+          <li>Deleted items stay non-clickable</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Dark Mode</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>Sun/Moon toggle in the Navbar</li>
+          <li>Saved per device, defaults to OS preference</li>
+          <li>No flash of wrong theme on load</li>
+          <li>Covers the whole app incl. login &amp; onboarding</li>
+        </ul>
+      </div>
     </div>
   </div>
 
@@ -151,6 +195,52 @@
         <tr><td>Deployment</td><td>Vercel</td><td>—</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💬 Features v3.1 — Independent Comments Chat</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>Comments trigger on every card</strong> — below the phone: "💬 N comments" or "Add a comment"; the compact last-note preview is clickable too</li>
+      <li class="new"><span>✅</span> <strong>CommentsModal</strong> — dedicated chat window, bottom sheet on mobile / centered on desktop, thread + compose box only</li>
+      <li class="new"><span>✅</span> <strong>addComment(id, text)</strong> in useApartments — appends to <code>notes</code>, optimistic update with rollback, saves only the notes column</li>
+      <li class="new"><span>✅</span> <strong>Push on comment</strong> — fires <code>POST /api/push/notify-comment</code> (non-blocking) to other household members</li>
+      <li class="new"><span>✅</span> <strong>NotesThread composeOnly mode</strong> — compose box only; modal renders its own thread</li>
+      <li class="new"><span>✅</span> <strong>Edit modal unchanged</strong> — comments can still be edited there</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📝 Features v3.1 — Custom Checklist Items</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>"אחר ➕" category</strong> — always present as the last category (auto-added if missing)</li>
+      <li class="new"><span>✅</span> <strong>Add your own items</strong> — inline input + add button (Enter also adds); persisted via the existing debounced save, counted in progress</li>
+      <li class="new"><span>✅</span> <strong>Delete custom items only</strong> — template items stay fixed; custom items use the <code>custom-</code> id prefix</li>
+      <li class="new"><span>✅</span> <strong>Reset keeps custom items</strong> — template restored, custom items kept but unchecked</li>
+      <li class="new"><span>✅</span> <strong>No schema change</strong> — stored in the existing <code>checklist_data</code> JSONB</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🧭 Features v3.1 — Activity Feed Jump</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>Clickable entries</strong> — rows pointing at an existing item become buttons; deleted items and "member joined" stay plain</li>
+      <li class="new"><span>✅</span> <strong>Scroll + highlight</strong> — drawer closes, card centers (<code>id="apt-&lt;id&gt;"</code>), pulsing brand ring for ~2.6s</li>
+      <li class="new"><span>✅</span> <strong>Filter-aware</strong> — filters are reset first if they would hide the target card</li>
+      <li class="new"><span>✅</span> <strong>ActivityFeed props</strong> — <code>onEntryClick(itemId)</code> and <code>isItemAvailable(itemId)</code></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🌙 Features v3.1 — Dark Mode</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>Class-based theme</strong> — Tailwind <code>darkMode: "class"</code>, <code>dark</code> class on &lt;html&gt;</li>
+      <li class="new"><span>✅</span> <strong>ThemeContext / useTheme</strong> — persisted in localStorage (<code>justpick-theme</code>), OS preference on first visit</li>
+      <li class="new"><span>✅</span> <strong>No flash on load</strong> — inline script in layout.tsx applies the class before paint</li>
+      <li class="new"><span>✅</span> <strong>Navbar Sun/Moon toggle</strong></li>
+      <li class="new"><span>✅</span> <strong>Full coverage</strong> — dashboard, Navbar, filters, cards, all modals, notes, activity feed, map panels, skeletons, footer, login/signup/onboarding/setup</li>
+      <li class="new"><span>✅</span> <strong>globals.css</strong> — dark CSS variables, scrollbar, skeleton shimmer</li>
+      <li class="new"><span>✅</span> <strong>Intentionally unchanged</strong> — Leaflet tiles + hover tooltip, image viewer stage, brand/accent colors</li>
+    </ul>
   </div>
 
   <div class="section">
@@ -387,6 +477,7 @@
     <table>
       <thead><tr><th>Date</th><th>Version</th><th>Changes</th></tr></thead>
       <tbody>
+        <tr><td>Nov 2026</td><td><span class="pill pill-purple">v3.1</span></td><td><strong>Comments:</strong> dedicated chat modal opened from the card, push on new comment. <strong>Checklist:</strong> user-added items under "אחר", kept on reset. <strong>Activity:</strong> entries jump to the item with scroll + highlight. <strong>Dark mode:</strong> class-based theme, Navbar toggle, persisted, whole-app coverage</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v3.0</span></td><td><strong>Web Push:</strong> VAPID, group-scoped subscriptions, instant new-item push, 48h cron reminders, SW push handler. <strong>PWA:</strong> manifest, service worker, install UI. <strong>Checklist:</strong> Hebrew inspection checklist modal</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.3</span></td><td><strong>AI Screenshot Extraction:</strong> Gemini Vision API, dynamic prompts per category, screenshot → hero image, non-destructive form merge</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v2.2</span></td><td><strong>Room filter:</strong> half-rooms, range UI, orange connected pills. <strong>Map:</strong> all categories, category-aware labels and price units</td></tr>
@@ -413,7 +504,7 @@
     </ul>
   </div>
 
-  <div class="footer">JustPick · v3.0 · September 2026 · Next.js + Supabase + Gemini Vision + PWA + Web Push</div>
+  <div class="footer">JustPick · v3.1 · November 2026 · Next.js + Supabase + Gemini Vision + PWA + Web Push + Dark Mode</div>
 
 </div>
 </body>

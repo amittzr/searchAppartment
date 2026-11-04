@@ -11,7 +11,7 @@
 - **Production URL:** https://search-appartment.vercel.app
 - **Repository:** https://github.com/amittzr/searchAppartment
 - **Database:** Supabase — project `khozzonoqctwbzsowulv` (ap-southeast-1, Singapore)
-- **Current Version:** v3.0 — September 2026
+- **Current Version:** v3.1 — November 2026
 
 ---
 
@@ -39,8 +39,8 @@
 src/
 ├── app/
 │   ├── page.tsx                  ← Main dashboard (filter, grid, map, modals)
-│   ├── layout.tsx                ← Root layout, HouseholdProvider wrapper
-│   ├── globals.css               ← Tailwind base + custom animations
+│   ├── layout.tsx                ← Root layout, ThemeProvider, no-flash theme script
+│   ├── globals.css               ← Tailwind base + custom animations + dark theme vars
 │   ├── login/page.tsx            ← Supabase Auth login page
 │   ├── signup/page.tsx           ← Supabase Auth signup (with invite password gate)
 │   ├── onboarding/page.tsx       ← Create or join household flow
@@ -51,24 +51,29 @@ src/
 │       ├── push/
 │       │   ├── vapid-key/route.ts        ← GET: returns public VAPID key to client
 │       │   ├── subscribe/route.ts        ← POST: save/remove push subscription
-│       │   └── notify-new-item/route.ts  ← POST: broadcast push on new item
+│       │   ├── notify-new-item/route.ts  ← POST: broadcast push on new item
+│       │   ├── notify-match/route.ts     ← POST: broadcast push when all members liked an item
+│       │   └── notify-comment/route.ts   ← POST: broadcast push when a comment is added
 │       └── cron/
 │           └── check-reminders/route.ts  ← GET: daily reminder cron (Vercel Cron)
 ├── components/
-│   ├── Navbar.tsx                ← Sticky header: household info, user menu, add button
+│   ├── Navbar.tsx                ← Sticky header: household info, user menu, add button, dark mode toggle
 │   ├── FilterToolbar.tsx         ← Filters: search, room range, sort, reaction pills
-│   ├── ApartmentCard.tsx         ← Card: image, price, reactions, NEW badge
+│   ├── ApartmentCard.tsx         ← Card: image, price, reactions, NEW badge, comments trigger, highlight ring
 │   ├── ApartmentModal.tsx        ← Add/Edit form: dynamic fields, notes thread, image upload
 │   ├── CategoryFields.tsx        ← Dynamic form fields based on category type
-│   ├── NotesThread.tsx           ← Chat-style threaded notes component
-│   ├── ChecklistModal.tsx        ← Physical inspection checklist modal (Hebrew)
+│   ├── NotesThread.tsx           ← Chat-style threaded notes component (full, compact, compose-only)
+│   ├── CommentsModal.tsx         ← Dedicated comments chat modal opened from the card
+│   ├── ActivityFeed.tsx          ← Activity drawer; entries jump to the related card
+│   ├── ChecklistModal.tsx        ← Physical inspection checklist modal (Hebrew) + custom "אחר" items
 │   ├── MapView.tsx               ← Interactive map — all categories
 │   ├── HouseholdSettingsModal.tsx ← Household info, editable invite code, members
 │   └── LoadingSkeleton.tsx       ← Shimmer placeholder grid
 ├── contexts/
-│   └── HouseholdContext.tsx      ← Auth state, profile, household, members
+│   ├── HouseholdContext.tsx      ← Auth state, profile, household, members
+│   └── ThemeContext.tsx          ← Light/dark theme state, localStorage persistence
 ├── hooks/
-│   ├── useApartments.ts          ← CRUD + reactions + markAsViewed + push trigger + Realtime
+│   ├── useApartments.ts          ← CRUD + reactions + addComment + markAsViewed + push trigger + Realtime
 │   ├── useYad2AutoFill.ts        ← Auto-fill hook for yad2.co.il + yad-il.co.il
 │   ├── usePWAInstall.ts          ← PWA install prompt detection (iOS/Android/desktop)
 │   └── usePushNotifications.ts  ← Web Push subscribe/unsubscribe lifecycle
@@ -130,7 +135,7 @@ src/
 | `metadata` | jsonb | Category-specific fields |
 | `notes` | jsonb | Threaded notes: `[{userId, userName, text, createdAt}]` |
 | `viewed_by` | jsonb | Array of user IDs who have seen this item |
-| `checklist_data` | jsonb | Physical inspection checklist state (Hebrew, 3 categories) |
+| `checklist_data` | jsonb | Physical inspection checklist state (Hebrew, 3 template categories + user-managed "אחר" category). Custom items use ids prefixed `custom-` |
 | `last_reminder_sent_at` | timestamptz | Tracks when last push reminder was sent (prevents spam) |
 | `latitude` | double precision | Geocoded coordinates |
 | `longitude` | double precision | Geocoded coordinates |
@@ -356,6 +361,41 @@ AS $$ SELECT household_id FROM public.profiles WHERE id = auth.uid() $$;
 |---|---|---|
 | New item added | ✨ פריט חדש נוסף לקבוצה! | Item title |
 | 48h no reaction | ⏳ פריט ממתין להחלטה | "הדירה [title] מחכה כבר יומיים..." |
+| New comment | 💬 הערה מ-[sender] | Comment preview (80 chars) + item title |
+
+### v3.1 — Comments Chat, Custom Checklist Items, Activity Jump, Dark Mode
+
+> No database migrations required. All changes use existing columns (`notes`, `checklist_data`, `activity_log.item_id`).
+
+#### Independent Comments Chat
+- [x] **Comments trigger on every card** — sits directly below the phone number: "💬 N comments" or "Add a comment"; the compact last-note preview is also clickable
+- [x] **`CommentsModal`** — dedicated chat window, opens like the checklist (bottom sheet on mobile, centered on desktop); thread + compose box only, no edit form
+- [x] **Send** with the button or Ctrl+Enter; failed sends restore the typed text and show an error
+- [x] **`addComment(id, text)`** in `useApartments` — appends a `{userId, userName, text, createdAt}` entry to `notes`, optimistic update with rollback on failure, persists only the notes column
+- [x] **Push on comment** — `addComment` fires `POST /api/push/notify-comment` (fire-and-forget, non-blocking) so other household members are notified
+- [x] **`NotesThread` `composeOnly` mode** — renders just the compose box; the modal renders its own thread
+- [x] Comments remain editable from the Add/Edit modal as before
+
+#### Custom Checklist Items ("אחר")
+- [x] **"אחר ➕" category** — always present (auto-added if missing) as the last checklist category
+- [x] **Add your own items** — inline input + add button (Enter also adds); items persist to `checklist_data` via the existing debounced save and count toward progress
+- [x] **Delete control on custom items only** — template items stay fixed; custom items are identified by the `custom-` id prefix
+- [x] **Reset keeps custom items** — template is restored, custom items are kept but unchecked
+
+#### Activity Feed → Jump to Item
+- [x] **Clickable entries** — activity rows that point at a still-existing item become buttons; entries for deleted items or "member joined" stay plain
+- [x] **Scroll + highlight** — click closes the drawer, centers the matching card (`id="apt-<id>"`), and shows a pulsing brand-color ring for ~2.6s
+- [x] **Filter-aware** — if current filters hide the target item, filters are reset first so the card is visible
+- [x] **`ActivityFeed` props** — `onEntryClick(itemId)` and `isItemAvailable(itemId)`
+
+#### Dark Mode
+- [x] **Class-based** — Tailwind `darkMode: "class"`; `dark` class toggled on `<html>`
+- [x] **`ThemeContext` / `useTheme`** — light/dark state, persisted in `localStorage` (`justpick-theme`), defaults to OS preference on first visit
+- [x] **No flash on load** — inline script in `layout.tsx` `<head>` applies the class before paint
+- [x] **Navbar toggle** — Sun/Moon button
+- [x] **Full coverage** — `dark:` variants across dashboard, Navbar, filters, cards, all modals (edit, checklist, comments, settings), notes, activity feed, map panels, loading/empty states, footer, and login/signup/onboarding/setup pages
+- [x] **`globals.css`** — dark CSS variables, dark scrollbar, dark skeleton shimmer
+- [x] Intentionally unchanged: Leaflet map tiles and the hover tooltip, image viewer stage, brand/accent colors
 
 ---
 
@@ -402,7 +442,7 @@ Push to `main` → Vercel auto-deploys.
 
 ## Roadmap
 
-### v3.1
+### v3.2
 - [ ] Re-enable RLS with proper auth token flow
 - [ ] Toast notifications for in-app actions
 - [ ] Leave household option
