@@ -50,7 +50,12 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      // Offline fallback: serve from cache when available. On a cache miss,
+      // return a proper network-error Response. Returning undefined here would
+      // throw "Failed to convert value to 'Response'" inside respondWith().
+      .catch(() =>
+        caches.match(event.request).then((cached) => cached || Response.error())
+      )
   );
 });
 

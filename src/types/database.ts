@@ -41,6 +41,14 @@ export interface Profile {
   household_id: string | null;
   created_at: string;
   updated_at: string;
+  /** When the user agreed to the Terms and Privacy Policy (null for legacy users). */
+  terms_accepted_at?: string | null;
+  /**
+   * True once the one-time welcome guide was finished or dismissed.
+   * Undefined when the DB migration has not been applied yet; callers must
+   * treat undefined as "do not show the guide".
+   */
+  has_completed_onboarding?: boolean;
 }
 
 export interface ProfileInsert {
@@ -57,6 +65,8 @@ export interface ProfileUpdate {
   avatar_url?: string | null;
   household_id?: string | null;
   updated_at?: string;
+  terms_accepted_at?: string | null;
+  has_completed_onboarding?: boolean;
 }
 
 // ── Activity Log Types ───────────────────────────────────────

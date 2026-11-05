@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, User, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Key } from "lucide-react";
 import JustPickLogo from "@/components/JustPickLogo";
+import LegalModal, { type LegalDocType } from "@/components/LegalModal";
 import { getSupabaseClient } from "@/lib/supabase-client";
 
 // ── Inner component that uses useSearchParams ─────────────────────────────────
@@ -30,8 +31,13 @@ function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // Explicit consent to the Terms of Service and Privacy Policy (required to sign up)
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  // Which legal document is currently open in the pop-up (null = closed)
+  const [legalDoc, setLegalDoc] = useState<LegalDocType | null>(null);
 
   const validateForm = (): string | null => {
+    if (!termsAccepted) return "You must agree to the Terms of Service and Privacy Policy";
     if (!invitePassword.trim()) return "Please enter the invite password";
     if (invitePassword !== process.env.NEXT_PUBLIC_APP_PASSWORD) return "Invalid invite password";
     if (!fullName.trim()) return "Please enter your name";
@@ -64,6 +70,9 @@ function SignupForm() {
         options: {
           data: {
             full_name: fullName.trim(),
+            // The DB trigger (handle_new_user) turns this flag into a server-side
+            // terms_accepted_at timestamp on the new profile row.
+            terms_accepted: true,
           },
         },
       });
@@ -244,10 +253,55 @@ function SignupForm() {
               />
             </div>
 
-            {/* Submit */}
+            {/* Terms & Privacy consent (mandatory) */}
+            <div className="flex items-start gap-3">
+              <input
+                id="terms-consent"
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => {
+                  setTermsAccepted(e.target.checked);
+                  setError(null);
+                }}
+                className="mt-0.5 w-4 h-4 flex-shrink-0 rounded border-slate-300 text-violet-600 focus:ring-2 focus:ring-violet-400 dark:border-slate-600 dark:bg-slate-700"
+              />
+              <label
+                htmlFor="terms-consent"
+                className="text-sm text-slate-600 leading-snug dark:text-slate-300"
+              >
+                I agree to the{" "}
+                {/* Real hrefs are kept for accessibility / open-in-new-tab, but a normal
+                    click opens the pop-up so the user stays on this page. */}
+                <a
+                  href="/legal/terms"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                    e.preventDefault();
+                    setLegalDoc("terms");
+                  }}
+                  className="text-violet-600 hover:text-violet-700 font-medium hover:underline dark:text-violet-400 dark:hover:text-violet-300"
+                >
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a
+                  href="/legal/privacy"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                    e.preventDefault();
+                    setLegalDoc("privacy");
+                  }}
+                  className="text-violet-600 hover:text-violet-700 font-medium hover:underline dark:text-violet-400 dark:hover:text-violet-300"
+                >
+                  Privacy Policy
+                </a>
+              </label>
+            </div>
+
+            {/* Submit — stays disabled until the terms checkbox is checked */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !termsAccepted}
               className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-br from-violet-500 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-violet-600 hover:to-blue-700 active:scale-95 transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -267,6 +321,18 @@ function SignupForm() {
           </form>
         </div>
       </div>
+
+      {/* Terms / Privacy pop-up — keeps the user on this page (form state is preserved).
+          "I Agree" ticks the consent checkbox and closes the pop-up. */}
+      <LegalModal
+        type={legalDoc}
+        onClose={() => setLegalDoc(null)}
+        onAgree={() => {
+          setTermsAccepted(true);
+          setError(null);
+          setLegalDoc(null);
+        }}
+      />
     </div>
   );
 }

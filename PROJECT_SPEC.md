@@ -11,7 +11,7 @@
 - **Production URL:** https://search-appartment.vercel.app
 - **Repository:** https://github.com/amittzr/searchAppartment
 - **Database:** Supabase — project `khozzonoqctwbzsowulv` (ap-southeast-1, Singapore)
-- **Current Version:** v3.1 — November 2026
+- **Current Version:** v3.2 — November 2026
 
 ---
 
@@ -64,6 +64,7 @@ src/
 │   ├── CategoryFields.tsx        ← Dynamic form fields based on category type
 │   ├── NotesThread.tsx           ← Chat-style threaded notes component (full, compact, compose-only)
 │   ├── CommentsModal.tsx         ← Dedicated comments chat modal opened from the card
+│   ├── WelcomeGuideModal.tsx     ← One-time 2-step guide: push notifications + add to home screen
 │   ├── ActivityFeed.tsx          ← Activity drawer; entries jump to the related card
 │   ├── ChecklistModal.tsx        ← Physical inspection checklist modal (Hebrew) + custom "אחר" items
 │   ├── MapView.tsx               ← Interactive map — all categories
@@ -113,6 +114,8 @@ src/
 | `full_name` | text NOT NULL | Display name for reactions |
 | `avatar_url` | text | Optional |
 | `household_id` | uuid | References households(id) |
+| `terms_accepted_at` | timestamptz | When the user agreed to Terms & Privacy (server time, set by the signup trigger). NULL for users who signed up before v3.2 |
+| `has_completed_onboarding` | boolean NOT NULL | Default `false` for new users; existing users backfilled to `true`. Set to `true` when the welcome guide is finished or dismissed |
 | `created_at` | timestamptz | Auto-set |
 | `updated_at` | timestamptz | Auto-updated |
 
@@ -155,7 +158,7 @@ src/
 ### Route Protection
 | Route | Access |
 |---|---|
-| `/login`, `/signup` | Public |
+| `/login`, `/signup`, `/join/*`, `/legal/*` | Public |
 | `/onboarding` | Auth required, no household required |
 | `/` and all others | Auth + household required |
 
@@ -397,6 +400,33 @@ AS $$ SELECT household_id FROM public.profiles WHERE id = auth.uid() $$;
 - [x] **`globals.css`** — dark CSS variables, dark scrollbar, dark skeleton shimmer
 - [x] Intentionally unchanged: Leaflet map tiles and the hover tooltip, image viewer stage, brand/accent colors
 
+### v3.2 — Terms Consent & First-Time Welcome Guide
+
+> **Requires migration:** run `supabase/migration-v3.2-onboarding-consent.sql` in the Supabase SQL Editor **before** deploying. Until it is applied the app keeps working, but the welcome guide stays hidden.
+
+#### Mandatory Terms & Privacy Agreement
+- [x] **Signup checkbox** — "I agree to the Terms of Service and Privacy Policy"; the two links open a **pop-up (`LegalModal`)** so the user stays on the signup page (form state preserved). The modal's "I Agree" ticks the checkbox. Real `/legal/*` hrefs are kept for Ctrl/Cmd/Shift-click
+- [x] **Shared legal text** — `components/legal/TermsContent.tsx` and `PrivacyContent.tsx` are the single source for both the `/legal/*` pages and the pop-up; legal pages now support dark mode
+- [x] **Create Account is disabled** until the box is checked; `validateForm` re-checks it
+- [x] **Consent audit trail** — signup sends `terms_accepted: true` in user metadata; the `handle_new_user` trigger writes `profiles.terms_accepted_at = now()` (server time)
+- [x] **`/legal` is a public path** in middleware so the links work before login
+- [x] **Deep links preserved** — `/join/[code]` → `/signup?invite=` flow is unchanged: user sees the checkbox, signs up, joins, then sees the guide
+- [ ] Known limitation: the checkbox is a client-side gate and `user_metadata` is client-supplied; strict enforcement would need a server-side signup route
+
+#### One-Time Welcome Guide
+- [x] **`has_completed_onboarding`** profile flag (default `false`; existing users backfilled `true`)
+- [x] **`WelcomeGuideModal`** — fixed 2-step modal (bottom sheet on mobile, centered on desktop), 2-dot progress indicator, dark/light styling. The first step carries the "Welcome to JustPick 🎉" heading. The same two steps appear on every platform, always in this order
+- [x] **Step 1 — Add to Home Screen 📱** ("Get the full app experience") — marketing copy plus three benefit rows (instant alerts, one-tap launch, full screen / own window). Install UI adapts to the device:
+  - **Native button first** — when the browser offers a one-tap install (`beforeinstallprompt`), shows "Add to Home Screen" / "Install JustPick" with the manual steps tucked under "Prefer to do it manually?"
+  - **Otherwise per-OS steps** — iPhone / iPad (Share → Add to Home Screen → Add), Android Chrome (⋮ menu → Install app / Add to Home screen), Samsung Internet (menu → Add page to → Home screen), desktop Chrome / Edge (address-bar install icon or menu → Install), desktop Safari (Share → Add to Dock)
+  - **Already installed** — green confirmation badge
+- [x] **Step 2 — Enable Notifications 🔔** ("Never miss a moment") — "Enable Notifications" triggers the native permission prompt via `usePushNotifications`; handles enabled / blocked / unsupported states
+  - **iOS note** — on iPhone & iPad, an explicit blue note explains that notifications only work after the app is added to the Home Screen (Step 1): open the app from its Home Screen icon, then enable notifications from Settings
+- [x] **`usePWAInstall` extended** (additive — Settings modal unchanged): `platform`, `browser`, `isIPad` (incl. iPadOS reporting as Mac). Detection is user-agent based and best-effort; menu wording varies by OS/browser version
+- [x] **Triggered from the dashboard** by the profile flag, so it works for normal signup, email-confirmation signup and deep-link joins
+- [x] **Never shows again** — "Get Started", "Skip", the close button and Escape all set `has_completed_onboarding = true`; a localStorage guard prevents a re-show on the same device if the DB write fails
+- [x] Backdrop clicks do not dismiss the guide (avoids accidental permanent dismissal)
+
 ---
 
 ## SQL Migrations
@@ -410,6 +440,7 @@ AS $$ SELECT household_id FROM public.profiles WHERE id = auth.uid() $$;
 | `supabase/migration-v2.1-viewed-by.sql` | Adds viewed_by JSONB column with GIN index |
 | `supabase/migration-v2.3-checklist.sql` | Adds checklist_data JSONB + last_reminder_sent_at columns |
 | `supabase/migration-push-subscriptions.sql` | Creates push_subscriptions table with RLS |
+| `supabase/migration-v3.2-onboarding-consent.sql` | Adds `terms_accepted_at` + `has_completed_onboarding` (existing users backfilled `true`); updates `handle_new_user` to record consent time |
 
 ---
 
@@ -442,7 +473,7 @@ Push to `main` → Vercel auto-deploys.
 
 ## Roadmap
 
-### v3.2
+### v3.3
 - [ ] Re-enable RLS with proper auth token flow
 - [ ] Toast notifications for in-app actions
 - [ ] Leave household option

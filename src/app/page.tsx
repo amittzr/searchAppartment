@@ -13,6 +13,7 @@ import HouseholdSettingsModal from "@/components/HouseholdSettingsModal";
 import MapView from "@/components/MapView";
 import ChecklistModal from "@/components/ChecklistModal";
 import CommentsModal from "@/components/CommentsModal";
+import WelcomeGuideModal from "@/components/WelcomeGuideModal";
 import AppFooter from "@/components/AppFooter";
 import ActivityFeed from "@/components/ActivityFeed";
 import { useActivityLog } from "@/hooks/useActivityLog";
@@ -20,6 +21,7 @@ import { HouseholdProvider, useHousehold } from "@/contexts/HouseholdContext";
 
 import { useApartments } from "@/hooks/useApartments";
 import { geocodeAddress, extractAddressFromTitle } from "@/lib/geocode";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import type {
   Apartment,
   ApartmentFormData,
@@ -90,7 +92,7 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   // ── Household context ───────────────────────────────────────────────────────
-  const { username, partnerName, categoryConfig, category } = useHousehold();
+  const { username, partnerName, categoryConfig, category, profile, refreshProfile } = useHousehold();
 
   // ── Data layer ──────────────────────────────────────────────────────────────
   const {
@@ -124,6 +126,45 @@ function DashboardContent() {
   const [checklistApartment, setChecklistApartment] = useState<Apartment | null>(null);
   const [commentsApartment, setCommentsApartment] = useState<Apartment | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  // ── One-time welcome guide ──────────────────────────────────────────────────
+  // The guide shows only when the DB flag is explicitly false. If the column is
+  // missing (migration not applied) the value is undefined and the guide stays hidden.
+  // A localStorage guard prevents a re-show if the DB write below ever fails.
+  const [guideFinished, setGuideFinished] = useState(false);
+  const guideStorageKey = profile ? `justpick-onboarding-done:${profile.id}` : null;
+
+  useEffect(() => {
+    if (!guideStorageKey) return;
+    try {
+      if (window.localStorage.getItem(guideStorageKey) === "1") setGuideFinished(true);
+    } catch {
+      // Storage unavailable (e.g. private mode) — fall back to the DB flag only
+    }
+  }, [guideStorageKey]);
+
+  const showWelcomeGuide = profile?.has_completed_onboarding === false && !guideFinished;
+
+  // Called when the guide is completed OR dismissed; never shows again afterwards.
+  const handleGuideComplete = async () => {
+    if (!profile || !guideStorageKey) return;
+    setGuideFinished(true);
+    try {
+      window.localStorage.setItem(guideStorageKey, "1");
+    } catch {
+      // Ignore storage errors
+    }
+
+    const { error: updateError } = await (getSupabaseClient().from("profiles") as any)
+      .update({ has_completed_onboarding: true })
+      .eq("id", profile.id);
+
+    if (updateError) {
+      console.warn("[onboarding] Failed to persist guide completion:", updateError.message);
+      return;
+    }
+    await refreshProfile();
+  };
 
   // Activity log
   const { entries: activityEntries, loading: activityLoading, logEvent, refetch: refetchActivity } = useActivityLog();
@@ -537,6 +578,9 @@ function DashboardContent() {
           </div>
         </div>
       )}
+      {/* ── One-time welcome guide (first login after signup) ───────────────────── */}
+      <WelcomeGuideModal isOpen={showWelcomeGuide} onComplete={handleGuideComplete} />
+
       {/* ── Footer ──────────────────────────────────────────────────────────────── */}
       <AppFooter />
     </div>
