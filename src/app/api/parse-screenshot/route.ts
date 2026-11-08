@@ -14,6 +14,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+
+// Anonymous (demo) visitors: max screenshot extractions per IP per window
+const ANON_SCREENSHOT_LIMIT = 2; // one free extraction in the UI, plus one retry after a failure
+const ANON_WINDOW_MS = 60 * 60 * 1000;
 
 // ── Model configuration ────────────────────────────────────────────────────────
 
@@ -248,16 +253,29 @@ function parseGeminiJson(rawText: string): ScreenshotExtraction {
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
-  // ── Auth guard: only logged-in users may use Gemini ───────────────────────
-  // This prevents anonymous abuse of the GEMINI_API_KEY quota.
+  // ── Access guard ──────────────────────────────────────────────────────────
+  // Logged-in users are unrestricted. Anonymous visitors (the public /demo
+  // playground) get a small per-IP allowance so the GEMINI_API_KEY quota
+  // cannot be drained by anyone who finds this endpoint.
   const supabase = await createServerSupabaseClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (authError || !user) {
-    return NextResponse.json<ParseScreenshotError>(
-      { success: false, error: "server_error", message: "Authentication required." },
-      { status: 401 }
+  if (!user) {
+    const limit = checkRateLimit(
+      `demo-parse-screenshot:${getClientIp(request)}`,
+      ANON_SCREENSHOT_LIMIT,
+      ANON_WINDOW_MS
     );
+    if (!limit.allowed) {
+      return NextResponse.json<ParseScreenshotError>(
+        {
+          success: false,
+          error: "server_error",
+          message: "Demo limit reached. Create a free account to keep extracting listings.",
+        },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      );
+    }
   }
 
   // ── Validate API key ───────────────────────────────────────────────────────

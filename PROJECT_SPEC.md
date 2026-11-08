@@ -11,7 +11,7 @@
 - **Production URL:** https://search-appartment.vercel.app
 - **Repository:** https://github.com/amittzr/searchAppartment
 - **Database:** Supabase — project `khozzonoqctwbzsowulv` (ap-southeast-1, Singapore)
-- **Current Version:** v3.2 — November 2026
+- **Current Version:** v3.3 — November 2026
 
 ---
 
@@ -38,7 +38,8 @@
 ```
 src/
 ├── app/
-│   ├── page.tsx                  ← Main dashboard (filter, grid, map, modals)
+│   ├── page.tsx                  ← Live dashboard wrapper (Supabase data → <Dashboard mode="live" />)
+│   ├── demo/page.tsx             ← Public interactive playground (<DemoDashboard />, indexable)
 │   ├── layout.tsx                ← Root layout, ThemeProvider, no-flash theme script
 │   ├── globals.css               ← Tailwind base + custom animations + dark theme vars
 │   ├── login/page.tsx            ← Supabase Auth login page
@@ -57,7 +58,11 @@ src/
 │       └── cron/
 │           └── check-reminders/route.ts  ← GET: daily reminder cron (Vercel Cron)
 ├── components/
-│   ├── Navbar.tsx                ← Sticky header: household info, user menu, add button, dark mode toggle
+│   ├── Dashboard.tsx             ← Shared dashboard UI; data injected via props (mode "live" | "demo")
+│   ├── DemoDashboard.tsx         ← /demo shell: mock HouseholdContext + AuthGateProvider + mock data
+│   ├── AuthGateModal.tsx         ← Signup/login conversion modal shown for gated demo actions
+│   ├── DemoBanner.tsx            ← Strip above the navbar in the demo (Sign in / Create free account)
+│   ├── Navbar.tsx                ← Sticky header: household info, user menu, add button, dark mode toggle (demoMode variant)
 │   ├── FilterToolbar.tsx         ← Filters: search, room range, sort, reaction pills
 │   ├── ApartmentCard.tsx         ← Card: image, price, reactions, NEW badge, comments trigger, highlight ring
 │   ├── ApartmentModal.tsx        ← Add/Edit form: dynamic fields, notes thread, image upload
@@ -71,10 +76,12 @@ src/
 │   ├── HouseholdSettingsModal.tsx ← Household info, editable invite code, members
 │   └── LoadingSkeleton.tsx       ← Shimmer placeholder grid
 ├── contexts/
-│   ├── HouseholdContext.tsx      ← Auth state, profile, household, members
+│   ├── HouseholdContext.tsx      ← Auth state, profile, household, members (context also exported for the demo)
+│   ├── AuthGateContext.tsx       ← requireAuth(reason) for the demo; harmless default outside it
 │   └── ThemeContext.tsx          ← Light/dark theme state, localStorage persistence
 ├── hooks/
 │   ├── useApartments.ts          ← CRUD + reactions + addComment + markAsViewed + push trigger + Realtime
+│   ├── useDemoApartments.ts      ← In-memory twin of useApartments for /demo (no Supabase)
 │   ├── useYad2AutoFill.ts        ← Auto-fill hook for yad2.co.il + yad-il.co.il
 │   ├── usePWAInstall.ts          ← PWA install prompt detection (iOS/Android/desktop)
 │   └── usePushNotifications.ts  ← Web Push subscribe/unsubscribe lifecycle
@@ -84,10 +91,15 @@ src/
 │   ├── supabase-middleware.ts    ← Middleware Supabase client (session refresh)
 │   ├── upload-images.ts          ← Supabase Storage image upload + cleanup utility
 │   ├── send-push.ts              ← Server-side Web Push broadcast helper (VAPID)
-│   └── geocode.ts                ← Nominatim geocoding utility
+│   ├── geocode.ts                ← Nominatim geocoding utility
+│   ├── demo-data.ts              ← Mock household, members, 2 apartments, activity for /demo
+│   ├── pending-intent.ts         ← localStorage: item a demo visitor filled in + one-time demo AI flag
+│   ├── consume-pending-intent.ts ← After signup: upload local photos, geocode, create the item
+│   └── rate-limit.ts             ← In-memory per-IP limiter for anonymous demo API calls
+public/demo/                      ← Placeholder SVG illustrations used by the mock apartments
 ├── types/
 │   └── database.ts               ← All types: Item, Profile, Household, FilterState, etc.
-└── middleware.ts                  ← Auth guard: redirect unauthenticated to /login
+└── middleware.ts                  ← Auth guard: unauthenticated "/" → /demo, other protected routes → /login
 ```
 
 ---
@@ -158,9 +170,11 @@ src/
 ### Route Protection
 | Route | Access |
 |---|---|
-| `/login`, `/signup`, `/join/*`, `/legal/*` | Public |
+| `/login`, `/signup`, `/join/*`, `/legal/*`, `/demo` | Public (signed-in users opening `/demo` are redirected to `/`) |
+| `/api/scrape-yad2`, `/api/parse-screenshot` | Public at middleware level; anonymous callers are rate-limited per IP inside each route |
 | `/onboarding` | Auth required, no household required |
-| `/` and all others | Auth + household required |
+| `/` | Auth + household required; unauthenticated visitors are redirected to `/demo` |
+| All other routes | Auth + household required (unauthenticated → `/login?from=...`) |
 
 ---
 
@@ -427,6 +441,39 @@ AS $$ SELECT household_id FROM public.profiles WHERE id = auth.uid() $$;
 - [x] **Never shows again** — "Get Started", "Skip", the close button and Escape all set `has_completed_onboarding = true`; a localStorage guard prevents a re-show on the same device if the DB write fails
 - [x] Backdrop clicks do not dismiss the guide (avoids accidental permanent dismissal)
 
+### v3.3 — Interactive Demo Playground (`/demo`)
+
+> No database migrations required. Marketing links should point to `/demo`; logged-out visitors at `/` are redirected there.
+
+#### Architecture
+- [x] **`Dashboard.tsx`** — the previous `page.tsx` dashboard extracted into a presentational component. Data layer is injected (`data`, `activity` props) with `mode: "live" | "demo"`; `/` passes Supabase-backed `useApartments` + `useActivityLog`, `/demo` passes in-memory mock data
+- [x] **Mock context** — `DemoDashboard` provides a mock value through the exported `HouseholdContext`, so `ApartmentCard`, `ImageViewer`, `ChecklistModal`, `FilterToolbar`, `MapView`, etc. are reused unchanged and no Supabase session is needed
+- [x] **Content** — 2 mock apartments (Tel Aviv 3-room, Ramat Gan 4-room) with images, checklist progress, comments and partner "Noa" reactions. Item 1 is already liked by Noa, so liking it as "You" triggers the match prompt. Images are placeholder SVGs in `public/demo/`
+- [x] **No network/realtime in demo** — no Supabase channels, no writes; `useDemoApartments` rejects every write and only supports marking viewed and local checklist edits
+
+#### Free exploration vs. gated actions
+- [x] **Free:** browse cards, expand, swipe/zoom gallery, filters/search/sort, open/toggle checklist (local state), read comments, map, activity feed, dark mode
+- [x] **Gated (signup modal via `requireAuth`):** add (on submit), like/review/reject (headline "Make it a match" when the partner already liked), send comment, edit, delete, Settings / "Invite partner"
+- [x] **`AuthGateModal`** — copy: "Loved the experience? Start hunting together! Create your free account in 10 seconds to save your properties and invite your partner." Per-action headline; Create free account / I already have an account / Keep exploring; focus trap, Esc, `aria-modal`. Email + password only (Google sign-in not implemented)
+- [x] **Navbar demo variant** — "Invite partner" (gated) and "Sign in" replace the invite code and user menu; `DemoBanner` strip above the navbar
+
+#### Add flow & intent preservation
+- [x] **Regular add form in demo** — Yad2 Auto-Fill and AI screenshot extraction work as in the live app. Demo photos/screenshots stay in the browser as compressed data URLs (no Storage upload); form validation accepts local `data:image/` hero images in demo only
+- [x] **Add = signup prompt** — pressing Add stores the filled form in `localStorage` (`justpick_pending_item`, 24h expiry) and opens the signup modal. If storage is full, local photos are dropped and the text details are kept
+- [x] **After signup** — `consumePendingIntent` runs once on the live dashboard when the household is an apartments household: uploads local photos to Storage, geocodes, inserts via `addApartment`, shows a confirmation notice. The intent is cleared only after a successful insert (kept for retry on failure); discarded for non-apartment households. No second scrape/AI call
+- [x] **`localStorage`, not `sessionStorage`** — survives the email-confirmation round trip in another tab
+
+#### Routing & signup
+- [x] `/demo` is public and indexable (own title/description; root layout stays `noindex`); signed-in users are redirected to `/`
+- [x] Logged-out visitors at `/` → `/demo`; other protected URLs still → `/login?from=...`. Note: a logged-out bookmarklet link (`/?autofill=...`) now lands on the demo
+- [x] Signup/login links from the demo carry `?source=demo`; **signup skips the invite-password gate** for `source=demo` (the gate is a client-side check on a public env var, so this is a UX change, not a security boundary)
+
+#### AI cost protection
+- [x] **One free AI extraction per demo visitor** — after a successful screenshot extraction the button is disabled ("Free AI extraction used", hint "Create a free account to keep using it") via a `localStorage` flag; the extracted details are saved immediately as the pending item. Failed extractions do not use the allowance
+- [x] **Server-side per-IP limits for anonymous callers** (`lib/rate-limit.ts`): `/api/parse-screenshot` 2/hour, `/api/scrape-yad2` 10/hour, then HTTP 429 "Demo limit reached…". Logged-in users are unrestricted
+- [ ] Known limitation: the limiter is in-memory, so on Vercel each server instance counts separately (a cost guard, not a hard cap). Use a shared store (e.g. Upstash Redis) and a Google AI Studio spend cap for a hard ceiling. The browser flag can be cleared by the visitor
+- [ ] Future: per-day AI limit for registered users
+
 ---
 
 ## SQL Migrations
@@ -473,7 +520,9 @@ Push to `main` → Vercel auto-deploys.
 
 ## Roadmap
 
-### v3.3
+### v3.4
+- [ ] Google sign-in (Supabase provider + `/auth/callback`)
+- [ ] Real photos for the demo apartments (replace placeholder SVGs in `public/demo/`)
 - [ ] Re-enable RLS with proper auth token flow
 - [ ] Toast notifications for in-app actions
 - [ ] Leave household option

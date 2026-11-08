@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+
+// Anonymous (demo) visitors: max Yad2 look-ups per IP per window
+const ANON_SCRAPE_LIMIT = 10;
+const ANON_WINDOW_MS = 60 * 60 * 1000;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -281,6 +287,23 @@ function parseApiResponse(data: any): Partial<ScrapeResult> {
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<ScrapeResult | ScrapeError>> {
+  // Anonymous visitors (public /demo playground) get a small per-IP allowance
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    const limit = checkRateLimit(
+      `demo-scrape-yad2:${getClientIp(request)}`,
+      ANON_SCRAPE_LIMIT,
+      ANON_WINDOW_MS
+    );
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Demo limit reached. Create a free account to keep importing listings." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      );
+    }
+  }
+
   // Parse body
   let url: string;
   let forwardedCookies: string | undefined;

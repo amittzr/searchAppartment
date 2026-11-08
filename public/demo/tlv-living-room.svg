@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Bright living room with a sofa and a large window">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5f3ff"/><stop offset="1" stop-color="#ede9fe"/></linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfdbfe"/><stop offset="1" stop-color="#e0f2fe"/></linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#wall)"/>
+  <rect y="430" width="800" height="170" fill="#d6c3a5"/>
+  <rect x="470" y="70" width="260" height="280" rx="8" fill="#ffffff"/>
+  <rect x="482" y="82" width="236" height="256" fill="url(#sky)"/>
+  <rect x="598" y="82" width="6" height="256" fill="#ffffff"/>
+  <rect x="482" y="206" width="236" height="6" fill="#ffffff"/>
+  <rect x="90" y="300" width="330" height="130" rx="24" fill="#7c3aed"/>
+  <rect x="70" y="340" width="60" height="110" rx="20" fill="#6d28d9"/>
+  <rect x="380" y="340" width="60" height="110" rx="20" fill="#6d28d9"/>
+  <rect x="120" y="270" width="110" height="80" rx="18" fill="#a78bfa"/>
+  <rect x="470" y="470" width="220" height="20" rx="10" fill="#b8a07c"/>
+  <rect x="490" y="490" width="12" height="50" fill="#8b7355"/>
+  <rect x="660" y="490" width="12" height="50" fill="#8b7355"/>
+  <circle cx="150" cy="120" r="40" fill="#fde68a"/>
+  <rect x="60" y="80" width="170" height="110" rx="6" fill="#ffffff" stroke="#c4b5fd" stroke-width="6"/>
+  <path d="M80 170 L130 120 L165 150 L190 125 L215 170 Z" fill="#a5b4fc"/>
+</svg>

@@ -8,14 +8,19 @@ import {
 } from "lucide-react";
 import { useHousehold } from "@/contexts/HouseholdContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuthGate } from "@/contexts/AuthGateContext";
+import Link from "next/link";
 
 interface NavbarProps {
   onAddClick: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
+  /** Public /demo playground: swaps the account menu for sign-in / sign-up actions. */
+  demoMode?: boolean;
 }
 
-export default function Navbar({ onAddClick, onRefresh, isRefreshing }: NavbarProps) {
+export default function Navbar({ onAddClick, onRefresh, isRefreshing, demoMode = false }: NavbarProps) {
+  const { requireAuth } = useAuthGate();
   const { 
     household, 
     profile, 
@@ -105,8 +110,19 @@ export default function Navbar({ onAddClick, onRefresh, isRefreshing }: NavbarPr
 
           {/* ── Actions ─────────────────────────────────────────── */}
           <div className="flex items-center gap-2">
+            {/* Demo: invite is a gated, high-intent action */}
+            {demoMode && (
+              <button
+                onClick={() => requireAuth("invite")}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 text-xs font-medium hover:bg-slate-100 hover:border-slate-300 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Invite partner</span>
+              </button>
+            )}
+
             {/* Invite code copy button */}
-            {household?.invite_code && (
+            {!demoMode && household?.invite_code && (
               <button
                 onClick={handleCopyInviteCode}
                 title={`Invite code: ${household.invite_code}`}
@@ -159,7 +175,18 @@ export default function Navbar({ onAddClick, onRefresh, isRefreshing }: NavbarPr
               />
             </button>
 
+            {/* Demo: guests get sign-in instead of an account menu */}
+            {demoMode && (
+              <Link
+                href="/login?source=demo"
+                className="hidden sm:flex items-center px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Sign in
+              </Link>
+            )}
+
             {/* User menu dropdown */}
+            {!demoMode && (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -240,6 +267,7 @@ export default function Navbar({ onAddClick, onRefresh, isRefreshing }: NavbarPr
                 </div>
               )}
             </div>
+            )}
 
             {/* Add Item CTA */}
             <button

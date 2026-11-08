@@ -4,7 +4,13 @@ import { createMiddlewareSupabaseClient } from "@/lib/supabase-middleware";
 // Routes that are publicly accessible (no auth required)
 // "/legal" must be public so the Terms/Privacy links on the signup form work
 // for visitors who are not logged in yet.
-const PUBLIC_PATHS = ["/login", "/signup", "/api/auth", "/join", "/legal"];
+// "/demo" is the public interactive playground used as the marketing landing page.
+// "/api/scrape-yad2" and "/api/parse-screenshot" must be reachable by demo visitors;
+// both routes enforce their own per-IP rate limit for anonymous callers.
+const PUBLIC_PATHS = [
+  "/login", "/signup", "/api/auth", "/join", "/legal", "/demo",
+  "/api/scrape-yad2", "/api/parse-screenshot",
+];
 
 // Routes that require auth but NOT a household
 const AUTH_ONLY_PATHS = ["/onboarding"];
@@ -30,6 +36,10 @@ export async function middleware(request: NextRequest) {
 
   // Public paths - allow through, but redirect to home if already authenticated
   if (isPublic) {
+    // Signed-in users have no use for the playground: send them to their dashboard
+    if (user && pathname === "/demo") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
     if (user && (pathname === "/login" || pathname === "/signup")) {
       // Check if user has a household
       const { data: profile } = await (supabase
@@ -51,6 +61,12 @@ export async function middleware(request: NextRequest) {
 
   // Not authenticated - redirect to login
   if (!user) {
+    // Visitors landing on the bare root (e.g. from ads) see the demo first.
+    // Deep links to other protected pages still go to login with a return path.
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/demo", request.url));
+    }
+
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);

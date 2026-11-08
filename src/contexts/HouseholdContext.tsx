@@ -26,7 +26,7 @@ import type { User } from "@supabase/supabase-js";
 // Manages authentication, profile, and household data
 // ============================================================
 
-interface HouseholdContextValue {
+export interface HouseholdContextValue {
   // Auth state
   user: User | null;
   profile: Profile | null;
@@ -52,7 +52,9 @@ interface HouseholdContextValue {
   copyInviteCode: () => Promise<boolean>;
 }
 
-const HouseholdContext = createContext<HouseholdContextValue | null>(null);
+// Exported so the public /demo playground can supply a mock value through the
+// same context and reuse every dashboard component unchanged.
+export const HouseholdContext = createContext<HouseholdContextValue | null>(null);
 
 // ============================================================
 // Provider Component

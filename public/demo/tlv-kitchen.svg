@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Modern kitchen with an island and pendant lights">
+  <rect width="800" height="600" fill="#f8fafc"/>
+  <rect y="440" width="800" height="160" fill="#cbd5e1"/>
+  <rect x="40" y="60" width="720" height="150" rx="8" fill="#e2e8f0"/>
+  <rect x="60" y="80" width="200" height="110" rx="6" fill="#ffffff"/>
+  <rect x="280" y="80" width="200" height="110" rx="6" fill="#ffffff"/>
+  <rect x="500" y="80" width="240" height="110" rx="6" fill="#ffffff"/>
+  <rect x="40" y="260" width="720" height="150" fill="#0ea5e9"/>
+  <rect x="40" y="250" width="720" height="20" fill="#f1f5f9"/>
+  <rect x="120" y="290" width="150" height="100" rx="6" fill="#0284c7"/>
+  <rect x="320" y="290" width="150" height="100" rx="6" fill="#0284c7"/>
+  <rect x="520" y="290" width="150" height="100" rx="6" fill="#0284c7"/>
+  <rect x="200" y="440" width="400" height="30" rx="8" fill="#f1f5f9"/>
+  <rect x="220" y="470" width="360" height="110" fill="#475569"/>
+  <line x1="260" y1="0" x2="260" y2="40" stroke="#94a3b8" stroke-width="4"/>
+  <line x1="540" y1="0" x2="540" y2="40" stroke="#94a3b8" stroke-width="4"/>
+  <path d="M230 40 H290 L275 70 H245 Z" fill="#fbbf24"/>
+  <path d="M510 40 H570 L555 70 H525 Z" fill="#fbbf24"/>
+</svg>

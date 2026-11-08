@@ -27,7 +27,7 @@ import { getSupabaseClient } from "@/lib/supabase-client";
 
 // ── Default checklist template (Hebrew labels) ────────────────────────────────
 
-const DEFAULT_CHECKLIST: ChecklistData = [
+export const DEFAULT_CHECKLIST: ChecklistData = [
   {
     category: "שאלות לדיירים / בעל הבית 🗣️",
     items: [
@@ -123,6 +123,8 @@ interface ChecklistModalProps {
   isOpen:    boolean;
   onClose:   () => void;
   onSaved:   (id: string, data: ChecklistData) => void;
+  /** Demo playground: skip the database write and only report changes via onSaved. */
+  localOnly?: boolean;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -132,6 +134,7 @@ export default function ChecklistModal({
   isOpen,
   onClose,
   onSaved,
+  localOnly = false,
 }: ChecklistModalProps) {
   const [checklist, setChecklist] = useState<ChecklistData>(() =>
     ensureOtherCategory(
@@ -178,6 +181,11 @@ export default function ChecklistModal({
   const saveToDatabase = useCallback(async (data: ChecklistData) => {
     setSaving(true);
     setSaveError(null);
+    if (localOnly) {
+      onSaved(apartment.id, data);
+      setSaving(false);
+      return;
+    }
     try {
       const supabase = getSupabaseClient();
       const { error } = await (supabase.from("apartments") as any)
@@ -190,7 +198,7 @@ export default function ChecklistModal({
     } finally {
       setSaving(false);
     }
-  }, [apartment.id, onSaved]);
+  }, [apartment.id, onSaved, localOnly]);
 
   // ── Toggle item — optimistic + debounced save ────────────────────────────────
   const toggleItem = useCallback((catIdx: number, itemIdx: number) => {

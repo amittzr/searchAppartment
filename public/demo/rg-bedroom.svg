@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Calm bedroom with a double bed">
+  <rect width="800" height="600" fill="#ecfeff"/>
+  <rect y="440" width="800" height="160" fill="#d9c7a8"/>
+  <rect x="150" y="90" width="500" height="200" rx="10" fill="#cffafe"/>
+  <rect x="190" y="250" width="420" height="190" rx="20" fill="#0f766e"/>
+  <rect x="170" y="200" width="460" height="90" rx="20" fill="#115e59"/>
+  <rect x="210" y="280" width="170" height="70" rx="18" fill="#ffffff"/>
+  <rect x="420" y="280" width="170" height="70" rx="18" fill="#ffffff"/>
+  <rect x="190" y="360" width="420" height="80" rx="14" fill="#14b8a6"/>
+  <rect x="60" y="370" width="90" height="90" rx="8" fill="#a16207"/>
+  <rect x="650" y="370" width="90" height="90" rx="8" fill="#a16207"/>
+  <circle cx="105" cy="340" r="22" fill="#fde68a"/>
+  <circle cx="695" cy="340" r="22" fill="#fde68a"/>
+</svg>

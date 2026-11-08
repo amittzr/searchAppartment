@@ -22,6 +22,11 @@ function SignupForm() {
     }
   }, [searchParams]);
 
+  // Visitors coming from the public /demo playground skip the invite-password gate.
+  // Note: the gate is a client-side check (NEXT_PUBLIC_APP_PASSWORD), so this is
+  // a UX decision, not a security boundary.
+  const skipInviteGate = searchParams.get("source") === "demo";
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,8 +43,10 @@ function SignupForm() {
 
   const validateForm = (): string | null => {
     if (!termsAccepted) return "You must agree to the Terms of Service and Privacy Policy";
-    if (!invitePassword.trim()) return "Please enter the invite password";
-    if (invitePassword !== process.env.NEXT_PUBLIC_APP_PASSWORD) return "Invalid invite password";
+    if (!skipInviteGate) {
+      if (!invitePassword.trim()) return "Please enter the invite password";
+      if (invitePassword !== process.env.NEXT_PUBLIC_APP_PASSWORD) return "Invalid invite password";
+    }
     if (!fullName.trim()) return "Please enter your name";
     if (!email.trim()) return "Please enter your email";
     if (!password) return "Please enter a password";
@@ -161,7 +168,8 @@ function SignupForm() {
               </div>
             )}
 
-            {/* Invite password field */}
+            {/* Invite password field (hidden for visitors arriving from /demo) */}
+            {!skipInviteGate && (
             <div className="relative">
               <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
@@ -175,6 +183,7 @@ function SignupForm() {
                 className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-slate-300 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600"
               />
             </div>
+            )}
 
             {/* Full name field */}
             <div className="relative">

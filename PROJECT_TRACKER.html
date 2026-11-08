@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JustPick — Project Tracker v3.2</title>
+  <title>JustPick — Project Tracker v3.3</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.6; padding: 2rem 1rem; }
@@ -50,7 +50,7 @@
     <h1>📍 JustPick</h1>
     <p>Collaborative decision-making app for couples — track apartments, venues, cars & more together</p>    <div class="header-meta">
       <span class="badge">✅ Live</span>
-      <span class="badge badge-new">v3.2</span>
+      <span class="badge badge-new">v3.3</span>
       <span class="badge">Next.js 15</span>
       <span class="badge">Supabase Auth</span>
       <span class="badge">Gemini Vision</span>
@@ -59,6 +59,32 @@
       <span class="badge">Dark Mode</span>
       <span class="badge">November 2026</span>
     </div>
+  </div>
+
+  <!-- What's New in v3.3 -->
+  <div class="highlight-box">
+    <h3>🚀 What's New in v3.3</h3>
+    <div class="two-col">
+      <div>
+        <strong>Interactive Demo Playground (<code>/demo</code>)</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>Public dashboard with 2 mock apartments, no account needed</li>
+          <li>Browse, swipe galleries, checklists, filters, map all work</li>
+          <li>Like / comment / invite / edit / delete open the signup modal</li>
+          <li>Logged-out visitors at <code>/</code> land on the demo</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Add flow &amp; cost protection</strong>
+        <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #475569;">
+          <li>Regular add form incl. Yad2 Auto-Fill; Add → signup, entry saved for after signup</li>
+          <li>One free AI screenshot extraction per demo visitor</li>
+          <li>Per-IP rate limits on anonymous API calls (2 AI / 10 Yad2 per hour)</li>
+          <li>Signup skips the invite password when coming from the demo</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top:0.75rem;font-size:0.85rem;color:#6d28d9;">No migration required. The rate limiter is in-memory (per server instance); add a Google AI Studio spend cap for a hard ceiling.</p>
   </div>
 
   <!-- What's New in v3.2 -->
@@ -221,6 +247,23 @@
         <tr><td>Deployment</td><td>Vercel</td><td>—</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎮 Features v3.3 — Interactive Demo Playground</div>
+    <ul class="checklist">
+      <li class="new"><span>✅</span> <strong>Shared <code>Dashboard</code></strong> — old <code>page.tsx</code> extracted; data injected via props (<code>mode: live | demo</code>). Demo supplies a mock <code>HouseholdContext</code> and <code>useDemoApartments</code>, so cards, gallery, checklist, filters and map are reused unchanged; no Supabase or realtime in demo</li>
+      <li class="new"><span>✅</span> <strong>/demo route</strong> — public and indexable; signed-in users redirected to <code>/</code>; logged-out visitors at <code>/</code> redirected to <code>/demo</code> (note: logged-out bookmarklet links now land on the demo)</li>
+      <li class="new"><span>✅</span> <strong>Mock content</strong> — Tel Aviv + Ramat Gan apartments, images, checklist progress, comments, partner "Noa" reactions (liking item 1 = match). Placeholder SVGs in <code>public/demo/</code></li>
+      <li class="new"><span>✅</span> <strong>AuthGateModal</strong> — triggered by add (on submit), like/review/reject, comment send, edit, delete, settings / invite partner; per-action headline, shared marketing copy; email + password only (no Google yet)</li>
+      <li class="new"><span>✅</span> <strong>Navbar &amp; banner</strong> — demo variant with "Invite partner" and "Sign in"; <code>DemoBanner</code> strip</li>
+      <li class="new"><span>✅</span> <strong>Regular add form in demo</strong> — Yad2 Auto-Fill and AI screenshot extraction; photos kept in the browser as compressed data URLs; validation accepts local <code>data:image/</code> hero in demo only</li>
+      <li class="new"><span>✅</span> <strong>Intent preservation</strong> — Add stores the filled form in <code>localStorage</code> (24h) then opens the signup modal; after signup <code>consumePendingIntent</code> uploads photos, geocodes and creates the item in the new apartments household (kept for retry on failure)</li>
+      <li class="new"><span>✅</span> <strong>Signup from demo</strong> — <code>?source=demo</code> skips the invite-password gate (UX change; the gate is client-side on a public env var)</li>
+      <li class="new"><span>✅</span> <strong>AI cost protection</strong> — one free extraction per visitor (button disabled afterwards, details saved); per-IP limits on <code>/api/parse-screenshot</code> (2/h) and <code>/api/scrape-yad2</code> (10/h) for anonymous callers via <code>lib/rate-limit.ts</code></li>
+      <li><span>⚠️</span> Limiter is in-memory per server instance (cost guard, not a hard cap); browser flag can be cleared. Future: shared store, per-day limit for registered users</li>
+      <li><span>⏳</span> Roadmap: Google sign-in, real demo photos</li>
+    </ul>
   </div>
 
   <div class="section">
@@ -529,6 +572,7 @@
     <table>
       <thead><tr><th>Date</th><th>Version</th><th>Changes</th></tr></thead>
       <tbody>
+        <tr><td>Nov 2026</td><td><span class="pill pill-purple">v3.3</span></td><td><strong>Demo playground:</strong> public <code>/demo</code> with mock apartments, signup modal on high-intent actions, regular add form with Yad2 Auto-Fill, pending item preserved through signup. <strong>Routing:</strong> logged-out <code>/</code> → <code>/demo</code>, signup skips invite password from demo. <strong>AI cost control:</strong> one free extraction per visitor, per-IP rate limits on anonymous API calls. <strong>Refactor:</strong> dashboard extracted to shared <code>Dashboard</code> component. No migration</td></tr>
         <tr><td>Nov 2026</td><td><span class="pill pill-purple">v3.2</span></td><td><strong>Consent:</strong> mandatory Terms &amp; Privacy checkbox on signup, <code>terms_accepted_at</code> stored by DB trigger. <strong>Onboarding:</strong> one-time welcome guide (push notifications + add to Home Screen), <code>has_completed_onboarding</code> flag. <strong>Migration:</strong> <code>migration-v3.2-onboarding-consent.sql</code></td></tr>
         <tr><td>Nov 2026</td><td><span class="pill pill-purple">v3.1</span></td><td><strong>Comments:</strong> dedicated chat modal opened from the card, push on new comment. <strong>Checklist:</strong> user-added items under "אחר", kept on reset. <strong>Activity:</strong> entries jump to the item with scroll + highlight. <strong>Dark mode:</strong> class-based theme, Navbar toggle, persisted, whole-app coverage</td></tr>
         <tr><td>Sep 2026</td><td><span class="pill pill-purple">v3.0</span></td><td><strong>Web Push:</strong> VAPID, group-scoped subscriptions, instant new-item push, 48h cron reminders, SW push handler. <strong>PWA:</strong> manifest, service worker, install UI. <strong>Checklist:</strong> Hebrew inspection checklist modal</td></tr>

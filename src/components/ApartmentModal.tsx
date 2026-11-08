@@ -24,6 +24,14 @@ import { useHousehold } from "@/contexts/HouseholdContext";
 import CategoryFields from "./CategoryFields";
 import NotesThreadComponent from "./NotesThread";
 import { uploadImages } from "@/lib/upload-images";
+import { useAuthGate } from "@/contexts/AuthGateContext";
+import {
+  dataUrlToFile,
+  fileToCompressedDataUrl,
+  hasUsedDemoAi,
+  markDemoAiUsed,
+  savePendingIntent,
+} from "@/lib/pending-intent";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -71,6 +79,14 @@ export default function ApartmentModal({
   onInitialDataConsumed,
 }: ApartmentModalProps) {
   const { categoryConfig, category, profile, household } = useHousehold();
+  // In the /demo playground there is no account or storage bucket: photos stay
+  // in the browser (compressed data URLs) until the visitor signs up.
+  const { isDemo } = useAuthGate();
+  // Demo visitors may use AI extraction once; afterwards the button is disabled.
+  const [demoAiUsed, setDemoAiUsed] = useState(false);
+  useEffect(() => {
+    if (isDemo) setDemoAiUsed(hasUsedDemoAi());
+  }, [isDemo]);
   const [form, setForm]               = useState<ApartmentFormData>(EMPTY_FORM);
   const [errors, setErrors]           = useState<Partial<Record<keyof ApartmentFormData, string>>>({});
   const [submitting, setSubmitting]   = useState(false);
@@ -223,7 +239,7 @@ export default function ApartmentModal({
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
-    if (!household?.id) {
+    if (!isDemo && !household?.id) {
       setUploadErrors(["No household found. Please refresh and try again."]);
       return;
     }
@@ -231,7 +247,19 @@ export default function ApartmentModal({
     setUploadingImages(true);
     setUploadErrors([]);
 
-    const { urls, errors: uploadErrs } = await uploadImages(files, household.id);
+    let urls: string[];
+    let uploadErrs: string[];
+    if (isDemo) {
+      urls = [];
+      uploadErrs = [];
+      for (const file of files) {
+        const dataUrl = await fileToCompressedDataUrl(file);
+        if (dataUrl) urls.push(dataUrl);
+        else uploadErrs.push(`"${file.name}" could not be read as an image.`);
+      }
+    } else {
+      ({ urls, errors: uploadErrs } = await uploadImages(files, household!.id));
+    }
 
     if (urls.length > 0) {
       setForm((prev) => ({
@@ -248,7 +276,7 @@ export default function ApartmentModal({
     setUploadingImages(false);
     // Reset input so the same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = "";
-  }, [household?.id]);
+  }, [household?.id, isDemo]);
 
   // ── Remove a single image from the list ────────────────────────────────
   const handleRemoveImage = useCallback((indexToRemove: number) => {
@@ -268,7 +296,11 @@ export default function ApartmentModal({
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!household?.id) {
+    if (isDemo && hasUsedDemoAi()) {
+      setDemoAiUsed(true);
+      return;
+    }
+    if (!isDemo && !household?.id) {
       setScreenshotBanner({ type: "error", message: "No household found. Please refresh." });
       return;
     }
@@ -277,9 +309,18 @@ export default function ApartmentModal({
     setScreenshotBanner(null);
 
     try {
+      // Demo: downscale first. It keeps the request small and gives us a
+      // data URL to show (and later upload) instead of using Supabase Storage.
+      let fileToSend = file;
+      let demoScreenshotUrl: string | null = null;
+      if (isDemo) {
+        demoScreenshotUrl = await fileToCompressedDataUrl(file);
+        if (demoScreenshotUrl) fileToSend = await dataUrlToFile(demoScreenshotUrl, "screenshot.jpg");
+      }
+
       // ── Step 1: Send to Gemini for extraction ──────────────────────────
       const extractFormData = new FormData();
-      extractFormData.append("file", file);
+      extractFormData.append("file", fileToSend);
       extractFormData.append("category", category);
 
       const extractRes = await fetch("/api/parse-screenshot", {
@@ -306,10 +347,9 @@ export default function ApartmentModal({
       const extractData = extractResponse.data;
 
       // ── Step 2: Upload screenshot to Supabase Storage ──────────────────
-      const { urls: uploadedUrls, errors: uploadErrs } = await uploadImages(
-        [file],
-        household.id
-      );
+      const { urls: uploadedUrls, errors: uploadErrs } = isDemo
+        ? { urls: demoScreenshotUrl ? [demoScreenshotUrl] : [], errors: [] as string[] }
+        : await uploadImages([file], household!.id);
 
       // ── Step 3: Merge extracted data into form (never erase user input) ─
       setForm((prev) => {
@@ -341,6 +381,30 @@ export default function ApartmentModal({
         };
       });
 
+      // Demo: spend the one free AI extraction and keep the result, so the visitor's
+      // details survive even if they close the form before pressing Add.
+      if (isDemo) {
+        markDemoAiUsed();
+        setDemoAiUsed(true);
+
+        const screenshotUrl = uploadedUrls[0] ?? "";
+        const saved = {
+          url:         form.url.trim(),
+          title:       String(extractData.title ?? ""),
+          price:       String(extractData.price ?? ""),
+          rooms:       String(extractData.rooms ?? ""),
+          phone:       String(extractData.phone ?? ""),
+          seller_name: String(extractData.seller_name ?? ""),
+          image_url:   screenshotUrl,
+          images:      screenshotUrl ? [screenshotUrl] : [],
+          metadata:    {},
+        };
+        // If storage is full, retry without the (large) screenshot
+        if (!savePendingIntent({ type: "item", data: saved })) {
+          savePendingIntent({ type: "item", data: { ...saved, image_url: "", images: [] } });
+        }
+      }
+
       const warnParts: string[] = [];
       if (uploadErrs.length > 0) warnParts.push("Screenshot could not be saved to storage.");
 
@@ -360,7 +424,7 @@ export default function ApartmentModal({
       // Reset so the same file can be re-selected
       if (screenshotInputRef.current) screenshotInputRef.current.value = "";
     }
-  }, [category, household?.id]);
+  }, [category, household?.id, isDemo, form.url]);
 
   // ── Validation ────────────────────────────────────────────────────────────
   const validate = (): boolean => {
@@ -378,7 +442,13 @@ export default function ApartmentModal({
     if (form.url.trim() && !/^https?:\/\/.+/.test(form.url.trim())) {
       newErrors.url = "URL must start with http:// or https://";
     }
-    if (form.image_url.trim() && !/^https?:\/\/.+/.test(form.image_url.trim())) {
+    // Demo photos are held in the browser as data URLs until the visitor signs up
+    const isLocalDemoImage = isDemo && form.image_url.trim().startsWith("data:image/");
+    if (
+      form.image_url.trim() &&
+      !isLocalDemoImage &&
+      !/^https?:\/\/.+/.test(form.image_url.trim())
+    ) {
       newErrors.image_url = "Image URL must start with http:// or https://";
     }
 
@@ -478,7 +548,11 @@ export default function ApartmentModal({
               </div>
 
               <p className="text-xs text-violet-600 dark:text-violet-300">
-                Upload a screenshot and AI will fill the form automatically.
+                {demoAiUsed
+                  ? "You used your free AI extraction. Create a free account to keep using it."
+                  : isDemo
+                  ? "Upload a screenshot and AI will fill the form. Free once in the demo."
+                  : "Upload a screenshot and AI will fill the form automatically."}
               </p>
 
               {/* Hidden file input */}
@@ -495,7 +569,7 @@ export default function ApartmentModal({
               <button
                 type="button"
                 onClick={() => screenshotInputRef.current?.click()}
-                disabled={screenshotExtracting || submitting}
+                disabled={screenshotExtracting || submitting || demoAiUsed}
                 className="
                   flex items-center justify-center gap-2 w-full py-2.5 rounded-xl
                   bg-violet-600 text-white text-sm font-semibold
@@ -508,6 +582,11 @@ export default function ApartmentModal({
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Analyzing with AI…
+                  </>
+                ) : demoAiUsed ? (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Free AI extraction used
                   </>
                 ) : (
                   <>
@@ -722,9 +801,10 @@ export default function ApartmentModal({
             >
               <input
                 type="url"
-                value={form.image_url}
+                // Hide the long data URL of a locally held demo photo; the preview strip shows it
+                value={form.image_url.startsWith("data:") ? "" : form.image_url}
                 onChange={(e) => setField("image_url", e.target.value)}
-                placeholder="https://..."
+                placeholder={form.image_url.startsWith("data:") ? "Using your uploaded photo" : "https://..."}
                 className={inputClass(!!errors.image_url)}
                 autoComplete="off"
               />

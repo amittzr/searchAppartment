@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Sunny balcony overlooking the city skyline">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdba74"/><stop offset="0.6" stop-color="#fde68a"/><stop offset="1" stop-color="#bae6fd"/></linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <circle cx="620" cy="160" r="70" fill="#fff7ed" opacity="0.9"/>
+  <rect x="40" y="260" width="90" height="200" fill="#94a3b8"/>
+  <rect x="150" y="200" width="110" height="260" fill="#64748b"/>
+  <rect x="280" y="290" width="80" height="170" fill="#94a3b8"/>
+  <rect x="390" y="230" width="120" height="230" fill="#7c8aa0"/>
+  <rect x="530" y="300" width="90" height="160" fill="#94a3b8"/>
+  <rect x="640" y="250" width="110" height="210" fill="#64748b"/>
+  <rect y="440" width="800" height="160" fill="#a8a29e"/>
+  <rect y="420" width="800" height="14" fill="#44403c"/>
+  <g stroke="#44403c" stroke-width="6">
+    <line x1="60" y1="420" x2="60" y2="340"/><line x1="200" y1="420" x2="200" y2="340"/>
+    <line x1="340" y1="420" x2="340" y2="340"/><line x1="480" y1="420" x2="480" y2="340"/>
+    <line x1="620" y1="420" x2="620" y2="340"/><line x1="740" y1="420" x2="740" y2="340"/>
+    <line x1="0" y1="340" x2="800" y2="340"/>
+  </g>
+  <circle cx="150" cy="520" r="34" fill="#16a34a"/>
+  <rect x="130" y="530" width="40" height="50" rx="6" fill="#b45309"/>
+  <rect x="470" y="500" width="150" height="14" rx="7" fill="#78350f"/>
+  <rect x="490" y="514" width="10" height="60" fill="#78350f"/>
+  <rect x="590" y="514" width="10" height="60" fill="#78350f"/>
+</svg>

@@ -22,7 +22,7 @@ type Apartment = Item;
 type ApartmentInsert = ItemInsert;
 type ApartmentUpdate = ItemUpdate;
 
-interface UseApartmentsReturn {
+export interface UseApartmentsReturn {
   apartments: Apartment[];
   loading: boolean;
   error: string | null;
